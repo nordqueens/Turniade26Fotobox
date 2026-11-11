@@ -49,7 +49,7 @@ async function route(request, env, originAllowed) {
   if (method === "POST" && area === "reports" && photoId(section) && !id) {
     if (!readUploadSecret(env.UPLOAD_AUTH)) return error("Der Fotodienst ist noch nicht eingerichtet.", 503);
     const report = await request.json().catch(() => null);
-    if (typeof report?.reason !== "string" || !Object.hasOwn(reportReasons, report.reason)) {
+    if (typeof report?.reason !== "string" || (report.reason !== "privacy" && !Object.hasOwn(reportReasons, report.reason))) {
       return error("Wähle bitte einen Grund für die Meldung.", 400);
     }
     await reportPhoto(bucket, section, report.reason, env.PHOTO_REPORT_LIMIT, request.headers.get("CF-Connecting-IP") || "local");

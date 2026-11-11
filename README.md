@@ -7,7 +7,7 @@ Die vier Einträge in `config.js` sind Testfotos. Ihre Wochentage und Kategorien
 ## Fotoordner
 
 - `Assets/Fotos/Originale/` enthält die Fotos zum Herunterladen.
-- `Assets/Fotos/Vorschau/` enthält die kleineren Bilder für Galerie und Slideshow.
+- `Assets/Fotos/Vorschau/` enthält die kleineren Bilder für die Galerie.
 - `Assets/Fotos/Import/` enthält die lokalen Ausgangsdateien. Git ignoriert diesen Ordner.
 - `Assets/Design/` enthält das Logo und die Olympia-Grafiken.
 
@@ -45,11 +45,11 @@ Beim Freischalten vergleicht der Upload-Dienst einen PBKDF2-SHA-256-Hash mit zuf
 
 ### Fotos melden und verwalten
 
-Über das Ausrufezeichen in der Fotoansicht können Besucher ein Foto melden und als Grund die eigene Sichtbarkeit, einen falschen Wochentag oder eine falsche Kategorie angeben. Der Fotodienst blendet es dann für alle Besucher aus. Offene Seiten aktualisieren die Galerie beim Wiederöffnen des Tabs oder spätestens mit dem nächsten Abruf nach bis zu 30 Sekunden. Die Dateien im privaten R2-Speicher bleiben zur Prüfung erhalten. Der Dienst begrenzt neue Meldungen pro IP und Cloudflare-Standort.
+Über das Ausrufezeichen in der Fotoansicht können Besucher ein Foto melden und einen Grund aus der Auswahlliste angeben. Der Fotodienst blendet es dann für alle Besucher aus. Offene Seiten aktualisieren die Galerie beim Wiederöffnen des Tabs oder spätestens mit dem nächsten Abruf nach bis zu 30 Sekunden. Die Dateien im privaten R2-Speicher bleiben zur Prüfung erhalten. Der Dienst begrenzt neue Meldungen pro IP und Cloudflare-Standort.
 
 Die eigene Admin-Seite erreichst du über das Schloss oder direkt über `admin.html`. Die Sitzung bleibt im selben Browser-Tab bis zum Ablauf des 30-Minuten-Tokens oder bis zum Abmelden erhalten. Der Meldungszähler lädt beim Öffnen der Seite und aktualisiert sich bei Meldungen im selben Browser sofort sowie geräteübergreifend ungefähr alle zwölf Sekunden.
 
-Unter **Admin → Gemeldet** lassen sich Meldungen prüfen und schließen. Das Foto ist danach wieder öffentlich sichtbar. Unter **Alle Fotos** lassen sich Wochentag und Kategorien ändern, Fotos ersetzen oder löschen. Beim Löschen einer über den Fotodienst hochgeladenen Datei werden Original und Vorschau aus R2 gelöscht. Ausgewählte Fotos lassen sich gemeinsam löschen oder um eine Kategorie ergänzen bzw. davon befreien. Eine geänderte Datei übernimmt den Meldestatus ihres Vorgängers.
+Unter **Admin → Gemeldet** lassen sich Meldungen prüfen. Über **Foto wieder anzeigen** wird das Foto erneut öffentlich sichtbar. Unter **Alle Fotos** lassen sich Wochentag und Kategorien ändern, Fotos ersetzen oder löschen. Beim Löschen einer über den Fotodienst hochgeladenen Datei werden Original und Vorschau aus R2 gelöscht. Ausgewählte Fotos lassen sich gemeinsam löschen oder um eine Kategorie ergänzen bzw. davon befreien. Eine geänderte Datei übernimmt den Meldestatus ihres Vorgängers.
 
 Fest im öffentlichen Repository liegende Testbilder können in der Galerie ausgeblendet werden. Ihre statischen URLs bleiben erreichbar, bis die Dateien aus dem veröffentlichten Stand entfernt werden. Für Eventfotos den Upload verwenden, damit der Fotodienst auch den direkten Dateizugriff sperren kann.
 

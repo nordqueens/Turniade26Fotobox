@@ -9,9 +9,6 @@ const activeTags = new Set();
 let activeDay = days[0];
 let visiblePhotos = [];
 let viewerPhotos = [];
-let slidePhoto;
-let slideTimer;
-const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const canShareFiles = typeof navigator.share === "function" && typeof navigator.canShare === "function";
 let sharePreparation;
 let shareFiles = [];
@@ -112,10 +109,6 @@ function photoCard(photo, index) {
   return card;
 }
 
-function photosByDay() {
-  return days.flatMap(day => [...photos.values()].filter(photo => photo.day === day));
-}
-
 function renderPhotos() {
   visiblePhotos = [...photos.values()].filter(photo => {
     if (photo.day !== activeDay) return false;
@@ -158,29 +151,6 @@ function showPhoto(index) {
   $("viewer-prev").hidden = viewerPhotos.length < 2;
   $("viewer-next").hidden = viewerPhotos.length < 2;
   setDownload($("viewer-download"), photo);
-}
-
-function advanceSlideshow() {
-  const choices = [...photos.values()].filter(photo => photo.id !== slidePhoto?.id);
-  if (!choices.length) return;
-  slidePhoto = choices[Math.floor(Math.random() * choices.length)];
-  const image = $("slide-image");
-  image.alt = slidePhoto.alt || slidePhoto.name;
-  image.src = slidePhoto.thumbnail;
-}
-
-function syncSlideshow() {
-  clearInterval(slideTimer);
-  $("slideshow").hidden = !photos.size;
-  if (!slidePhoto) advanceSlideshow();
-
-  if (photos.size > 1 && !reducedMotion.matches) {
-    slideTimer = setInterval(() => {
-      if (!document.hidden && !document.querySelector("dialog[open]") && !$("slide-open").matches(":focus-visible")) {
-        advanceSlideshow();
-      }
-    }, 5000);
-  }
 }
 
 function notify(message) {
@@ -287,13 +257,6 @@ function renderCatalog() {
   }
   renderSelection();
 
-  if (slidePhoto && photos.get(slidePhoto.id)?.revision !== slidePhoto.revision) {
-    slidePhoto = undefined;
-    $("slide-image").removeAttribute("src");
-    $("slide-backdrop").removeAttribute("src");
-  }
-  syncSlideshow();
-
   if ($("viewer").open) {
     const current = viewerPhotos[viewIndex];
     viewerPhotos = viewerPhotos.map(photo => photos.get(photo.id)).filter(Boolean);
@@ -364,18 +327,6 @@ async function submitReport(event) {
   }
 }
 
-$("slide-open").addEventListener("click", () => {
-  const order = photosByDay();
-  openViewer(order, order.findIndex(photo => photo.id === slidePhoto.id));
-});
-$("slide-image").addEventListener("load", event => {
-  $("slide-backdrop").src = event.target.currentSrc;
-  if (!reducedMotion.matches) event.target.animate([{ opacity: .65 }, { opacity: 1 }], 260);
-});
-$("slide-image").addEventListener("error", event => {
-  if (slidePhoto && event.target.getAttribute("src") !== slidePhoto.source) event.target.src = slidePhoto.source;
-});
-reducedMotion.addEventListener("change", syncSlideshow);
 $("open-help").addEventListener("click", () => $("help").showModal());
 $("close-help").addEventListener("click", () => $("help").close());
 $("reset-filters").addEventListener("click", resetFilters);
@@ -419,17 +370,7 @@ function renderPhotosAfterViewer() {
 }
 
 $("open-admin").href = "admin.html" + modeQuery;
-const reportChoices = Object.entries(reportReasons).map(([value, label]) => {
-  const radio = element("input");
-  radio.type = "radio";
-  radio.name = "reason";
-  radio.value = value;
-  radio.required = true;
-  const option = element("label", "report-choice");
-  option.append(radio, element("span", "", label));
-  return option;
-});
-$("report-reasons").append(...reportChoices);
+$("report-reason").append(...Object.entries(reportReasons).map(([value, label]) => new Option(label, value)));
 
 $("open-report").hidden = !endpoint;
 $("open-report").addEventListener("click", openReport);
@@ -448,5 +389,4 @@ if (endpoint) {
 renderDayFilters();
 renderTagFilters();
 renderPhotos();
-syncSlideshow();
 loadCatalog();

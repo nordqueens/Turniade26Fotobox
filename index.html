@@ -50,13 +50,6 @@
   </header>
 
   <main class="wrap">
-    <section class="slideshow" id="slideshow" aria-label="Slideshow" hidden>
-      <button class="slide-open" id="slide-open" type="button" aria-label="Foto aus der Slideshow öffnen">
-        <img class="slide-backdrop" id="slide-backdrop" alt="" aria-hidden="true">
-        <img class="slide-image" id="slide-image" alt="">
-      </button>
-    </section>
-
     <section class="gallery" id="galerie" aria-label="Fotos">
       <div class="gallery-heading">
         <p id="photo-count" role="status"></p>
@@ -110,7 +103,10 @@
     </div>
     <p>Das Foto verschwindet aus der Galerie, bis das Team es geprüft hat.</p>
     <form id="report-form">
-      <fieldset id="report-reasons"><legend>Warum meldest du das Foto?</legend></fieldset>
+      <label for="report-reason">Warum meldest du das Foto?</label>
+      <select id="report-reason" name="reason" required>
+        <option value="" disabled selected>Grund auswählen</option>
+      </select>
       <p class="notice error" id="report-error" role="status" hidden></p>
       <button class="button primary" id="confirm-report" type="submit">Jetzt melden</button>
     </form>

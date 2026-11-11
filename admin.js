@@ -1,6 +1,6 @@
 import { defaultTags, samplePhotos } from "./config.js";
 import { $, catalogChannel, chip, days, element, endpoint, icon, modeQuery, renderDayToggle, request, tagKey } from "./client.mjs";
-import { reportReasons } from "./upload/report-reasons.mjs";
+import { reportReasonLabel } from "./upload/report-reasons.mjs";
 
 const samples = new Map(samplePhotos.map(photo => [photo.id, photo]));
 const maxPhotoSize = 20 * 1024 * 1024;
@@ -239,6 +239,7 @@ function renderAdminLibrary() {
   $("admin-list").replaceChildren(...shown.map(photo => {
     const row = element("li", "admin-photo-card");
     row.dataset.day = photo.day;
+    if (adminView === "all" && photo.status === "reported") row.classList.add("is-reported");
     const open = element("button", "admin-photo-open");
     open.type = "button";
     open.setAttribute("aria-label", "Foto bearbeiten: " + (photo.alt || photo.name));
@@ -255,6 +256,10 @@ function renderAdminLibrary() {
     }
     open.append(image);
     open.addEventListener("click", () => openEditor(photo));
+    if (adminView === "reported") {
+      row.append(open);
+      return row;
+    }
     const select = element("button", "select-photo");
     select.type = "button";
     select.setAttribute("aria-label", "Foto auswählen: " + (photo.alt || photo.name));
@@ -313,12 +318,13 @@ async function openEditor(photo) {
   clearEditor();
   editPhoto = photo;
   for (const tag of photo.tags) editTags.add(tag);
+  const reported = photo.status === "reported";
   $("edit-name").textContent = photo.name;
+  $("edit-name").hidden = reported;
   $("edit-day").value = photo.day;
-  $("edit-photo-status").textContent = photo.status === "reported" ? "Gemeldet · in der Galerie ausgeblendet" : "In der Galerie sichtbar";
-  $("edit-report-reason").hidden = photo.status !== "reported";
-  $("edit-report-reason").textContent = reportReasons[photo.reportReason] || "Kein Meldegrund angegeben.";
-  $("dismiss-report").hidden = photo.status !== "reported";
+  $("edit-report").hidden = !reported;
+  $("edit-report-reason").textContent = reportReasonLabel(photo.reportReason);
+  $("dismiss-report").hidden = !reported;
   $("admin-library").hidden = true;
   $("edit-photo-form").hidden = false;
   renderTagPicker("edit-tags", editTags);
@@ -378,7 +384,7 @@ async function mutatePhoto(action) {
       success = "Änderungen gespeichert.";
     } else if (action === "dismiss") {
       await adminRequest(path + "/dismiss", { method: "POST", headers });
-      success = "Meldung geschlossen. Das Foto ist wieder sichtbar.";
+      success = "Das Foto ist wieder in der Galerie sichtbar.";
     } else {
       await adminRequest(path, { method: "DELETE", headers });
       success = "Foto gelöscht.";

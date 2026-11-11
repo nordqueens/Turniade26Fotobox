@@ -74,17 +74,6 @@ h1, h2, h3, p { margin: 0; }
 .upload-button { background: var(--blue-fill); color: #fff; box-shadow: 0 4px 11px #173d9b45, inset 0 1px 1px #ffffff50; }
 .upload-button:hover { background: #173a99; }
 
-.slideshow {
-  position: relative; height: clamp(175px, 53vw, 230px); margin-top: 8px; overflow: hidden;
-  border: 1px solid var(--glass-rim); border-radius: 21px; background: #26231f;
-  box-shadow: 0 6px 18px var(--shadow);
-}
-.slide-open { display: block; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
-.slide-open:focus-visible { outline: 3px solid var(--yellow); outline-offset: -5px; }
-.slide-open img { display: block; width: 100%; height: 100%; color: #fff; }
-.slide-backdrop { position: absolute; inset: 0; object-fit: cover; filter: blur(19px) brightness(.52); transform: scale(1.13); }
-.slide-image { position: relative; object-fit: contain; }
-
 .gallery { margin-block: 18px 34px; }
 .gallery-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 .dialog-heading h2 { font: 800 clamp(1.9rem, 6vw, 2.85rem)/1 var(--display); letter-spacing: -.05em; }
@@ -228,14 +217,12 @@ h1, h2, h3, p { margin: 0; }
   .brand { gap: 12px; }
   .brand strong { font-size: 1.65rem; }
   .header-actions { gap: 12px; }
-  .slideshow { height: 250px; margin-top: 12px; }
   .gallery { margin-top: 28px; }
   .day-filters { gap: 6px; }
   .photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .photo-card { aspect-ratio: 1.35; }
 }
 @media (min-width: 900px) {
-  .slideshow { height: 285px; }
   .photo-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
 }
 @media (prefers-color-scheme: dark) {
@@ -270,14 +257,11 @@ h1, h2, h3, p { margin: 0; }
 }
 .viewer-bottom .report-button .icon { width: 17px; height: 17px; }
 .viewer-bottom .report-button:hover { background: #dce4ef; }
-#report-reasons { display: grid; gap: 7px; border: 0; padding: 0; margin: 14px 0; }
-#report-reasons legend { margin-bottom: 6px; font-weight: 800; }
-.report-choice {
-  display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 7px 9px;
-  border-radius: 9px; border: 1px solid var(--line); cursor: pointer;
+#report-form label { display: block; margin: 13px 0 5px; font-weight: 800; }
+#report-reason {
+  width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line);
+  border-radius: 10px; background: var(--surface); text-overflow: ellipsis;
 }
-.report-choice input { accent-color: var(--blue-fill); }
-.report-choice:has(input:checked) { background: var(--hover); }
 .viewer-bottom .photo-tags { margin-right: auto; }
 
 .admin-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 16px; }
@@ -299,6 +283,7 @@ h1, h2, h3, p { margin: 0; }
   position: relative; min-width: 0; overflow: hidden; border-radius: 13px; border: 1px solid var(--line);
   background: var(--surface); box-shadow: var(--lift);
 }
+.admin-photo-card.is-reported { border: 2px solid #c8394a; }
 .admin-photo-card.is-selected { outline: 2px solid var(--blue); }
 .admin-photo-open { display: block; width: 100%; aspect-ratio: 1.3; padding: 0; border: 0; background: var(--soft-surface); }
 .admin-photo-open:focus-visible { outline-offset: -3px; }
@@ -319,7 +304,16 @@ h1, h2, h3, p { margin: 0; }
 }
 .admin-back { justify-self: start; }
 .admin-image { display: block; width: 100%; height: min(44vw, 220px); object-fit: contain; background: #191919; border-radius: 12px; }
-.admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.admin-actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 7px; }
+.admin-actions > .button, .admin-actions > .text-button { min-width: 0; overflow-wrap: anywhere; }
+.admin-editor-actions { margin-top: 3px; }
+.admin-editor-actions #dismiss-report { padding-inline: 10px; font-size: clamp(.8rem, 3.6vw, .98rem); }
+.admin-report-reason {
+  display: flex; gap: 9px; align-items: flex-start; padding: 10px 12px; border: 1px solid #c8394a;
+  border-radius: 11px; background: var(--error-fill); color: var(--error-ink);
+}
+.admin-report-reason .icon { margin-top: 2px; }
+.admin-report-reason strong { display: block; margin-bottom: 2px; }
 .admin-actions .primary { margin-top: 0; }
 .danger-button { color: var(--error-ink); background: var(--error-fill); }
 .danger-button:hover { color: var(--error-ink); background: var(--error-fill); filter: brightness(.95); }

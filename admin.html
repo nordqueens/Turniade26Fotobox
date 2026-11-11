@@ -25,6 +25,9 @@
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h12l4 4v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 0v6h10V3M7 21v-8h10v8"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3m4 0-1 15H6L5 6m5 4v7m4-7v7"/></symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24"><path d="M10.3 4a2 2 0 0 1 3.4 0l8.1 14a2 2 0 0 1-1.7 3H3.9a2 2 0 0 1-1.7-3ZM12 9v4m0 4h.01"/></symbol>
   </svg>
 
   <header class="site-header">
@@ -82,8 +85,10 @@
     <form class="admin-panel" id="edit-photo-form" hidden>
       <button class="text-button admin-back" id="admin-back" type="button">← Zur Übersicht</button>
       <h3 id="edit-name"></h3>
-      <p id="edit-photo-status"></p>
-      <p class="notice" id="edit-report-reason" hidden></p>
+      <div class="admin-report-reason" id="edit-report" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>
+        <div><strong>Meldegrund</strong><p id="edit-report-reason"></p></div>
+      </div>
       <img class="admin-image" id="edit-image" alt="" hidden>
       <label for="edit-day">Wochentag</label>
       <select id="edit-day" required><option>Freitag</option><option>Samstag</option><option>Sonntag</option></select>
@@ -91,10 +96,10 @@
       <div class="add-tag"><label class="sr-only" for="edit-new-tag">Neue Kategorie für dieses Foto</label><input id="edit-new-tag" placeholder="Neue Kategorie" maxlength="32"><button class="button" id="add-edit-tag" type="button">Kategorie hinzufügen</button></div>
       <label for="edit-replacement">Foto ersetzen</label>
       <input id="edit-replacement" type="file" accept="image/jpeg,image/png,image/webp">
-      <div class="admin-actions">
-        <button class="button primary" id="save-photo" type="submit">Änderungen speichern</button>
-        <button class="button" id="dismiss-report" type="button" hidden>Meldung schließen</button>
-        <button class="button danger-button" id="ask-delete-photo" type="button">Foto löschen</button>
+      <div class="admin-actions admin-editor-actions">
+        <button class="icon-button primary" id="save-photo" type="submit" aria-label="Änderungen speichern" title="Änderungen speichern"><svg class="icon" aria-hidden="true"><use href="#i-save"/></svg></button>
+        <button class="button" id="dismiss-report" type="button" hidden>Foto wieder anzeigen</button>
+        <button class="icon-button danger-button" id="ask-delete-photo" type="button" aria-label="Foto löschen" title="Foto löschen"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button>
       </div>
       <div class="notice error" id="confirm-delete-photo" hidden>
         <p>Dieses Foto wirklich löschen?</p>
