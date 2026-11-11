@@ -1,3 +1,16 @@
 {
-  "photos": []
+  "photos": [
+    {
+      "source": "Assets/Fotos/Originale/97c02f46-e06f-4ac3-9d4e-b46d43be8728-84d30d91-7b2e-40e5-9cb4-0ff3de2ee18d.png",
+      "thumbnail": "Assets/Fotos/Vorschau/97c02f46-e06f-4ac3-9d4e-b46d43be8728-84d30d91-7b2e-40e5-9cb4-0ff3de2ee18d.png",
+      "name": "A616AB9D-EC86-4C75-A3D9-4B13C4DF7239.png",
+      "static": false,
+      "id": "97c02f46-e06f-4ac3-9d4e-b46d43be8728",
+      "day": "Freitag",
+      "tags": [
+        "Bodenturnen"
+      ],
+      "revision": "8c5bf168-062e-4dc2-aa82-8977f69eff6d"
+    }
+  ]
 }
