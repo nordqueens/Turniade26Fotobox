@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f6f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#211e19" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex">
+  <title>Admin · Turniade-Fotobox</title>
+  <link rel="icon" href="Assets/Design/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700..800&amp;family=DM+Sans:wght@400..800&amp;display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="admin.js"></script>
+</head>
+<body id="oben">
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+    <filter id="transparent-paper" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.3333 -.3333 -.3333 0 1"/>
+      <feComponentTransfer result="paper-mask"><feFuncA type="linear" slope="12" intercept="-.24"/></feComponentTransfer>
+      <feComposite in="SourceGraphic" in2="paper-mask" operator="in"/>
+    </filter>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  </svg>
+
+  <header class="site-header">
+    <img class="olympia-stripes header-stripes" src="Assets/Design/olympia-blau-gelb.png" alt="" aria-hidden="true">
+    <div class="wrap header-inner">
+      <h1><a class="brand" href="./" id="brand-gallery">
+        <img class="event-logo" src="Assets/Design/logo.png" alt="KiSGruTu · TujuSH" width="92" height="67">
+        <span><small>TURNIADE 2026</small><strong>Admin</strong></span>
+      </a></h1>
+      <div class="header-actions">
+        <a class="button" id="back-gallery" href="./">Galerie</a>
+        <button class="button" id="sign-out" type="button" hidden>Abmelden</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap uploader admin-page">
+    <p class="notice" id="upload-feedback" role="status" hidden></p>
+    <p class="notice" id="upload-unavailable" hidden>Der Fotodienst ist noch nicht verbunden. Die Beispielgalerie kannst du schon nutzen.</p>
+    <form class="admin-panel" id="unlock-form" hidden>
+      <p>Gib das Admin-Passwort ein.</p>
+      <label for="password">Passwort</label>
+      <input id="password" type="password" autocomplete="current-password" required maxlength="256">
+      <button class="button primary" type="submit">Freischalten</button>
+    </form>
+    <nav class="admin-nav" id="admin-nav" aria-label="Admin-Bereich" hidden>
+      <button class="button" type="button" data-admin-view="upload">Hochladen</button>
+      <button class="button" type="button" data-admin-view="reported">Gemeldet</button>
+      <button class="button" type="button" data-admin-view="all">Alle Fotos</button>
+    </nav>
+    <form class="admin-panel" id="upload-form" hidden>
+      <h2>Fotos hochladen</h2>
+      <label for="upload-files">Fotos auswählen</label>
+      <input id="upload-files" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+      <p class="field-help">JPG, PNG oder WebP · bis zu 20 MB pro Foto</p>
+      <ul class="upload-list" id="upload-list" hidden></ul>
+      <fieldset><legend>Wochentag</legend><div id="upload-days" class="day-filters" role="group" aria-label="Wochentag"></div></fieldset>
+      <fieldset><legend>Kategorien</legend><div class="filter-options" id="upload-tags"></div></fieldset>
+      <div class="add-tag"><label class="sr-only" for="new-tag">Neue Kategorie</label><input id="new-tag" placeholder="Neue Kategorie" maxlength="32"><button class="button" id="add-tag" type="button" aria-label="Kategorie hinzufügen"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Hinzufügen</button></div>
+      <button class="button primary" id="publish-photos" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg>Fotos veröffentlichen</button>
+    </form>
+    <section id="admin-library" aria-label="Fotos verwalten" hidden>
+      <p id="admin-list-status" role="status"></p>
+      <button class="button" id="retry-admin-list" type="button" hidden>Liste neu laden</button>
+      <div class="admin-batch" id="admin-batch" hidden>
+        <strong id="admin-selection-count" role="status"></strong>
+        <div class="admin-actions">
+          <button class="button" id="open-batch-categories" type="button">Kategorien ändern</button>
+          <button class="button danger-button" id="open-batch-delete" type="button">Auswahl löschen</button>
+          <button class="text-button" id="clear-admin-selection" type="button">Abwählen</button>
+        </div>
+      </div>
+      <ul class="admin-gallery" id="admin-list"></ul>
+    </section>
+    <form class="admin-panel" id="edit-photo-form" hidden>
+      <button class="text-button admin-back" id="admin-back" type="button">← Zur Übersicht</button>
+      <h3 id="edit-name"></h3>
+      <p id="edit-photo-status"></p>
+      <p class="notice" id="edit-report-reason" hidden></p>
+      <img class="admin-image" id="edit-image" alt="" hidden>
+      <label for="edit-day">Wochentag</label>
+      <select id="edit-day" required><option>Freitag</option><option>Samstag</option><option>Sonntag</option></select>
+      <fieldset><legend>Kategorien</legend><div class="filter-options" id="edit-tags"></div></fieldset>
+      <div class="add-tag"><label class="sr-only" for="edit-new-tag">Neue Kategorie für dieses Foto</label><input id="edit-new-tag" placeholder="Neue Kategorie" maxlength="32"><button class="button" id="add-edit-tag" type="button">Kategorie hinzufügen</button></div>
+      <label for="edit-replacement">Foto ersetzen</label>
+      <input id="edit-replacement" type="file" accept="image/jpeg,image/png,image/webp">
+      <div class="admin-actions">
+        <button class="button primary" id="save-photo" type="submit">Änderungen speichern</button>
+        <button class="button" id="dismiss-report" type="button" hidden>Meldung schließen</button>
+        <button class="button danger-button" id="ask-delete-photo" type="button">Foto löschen</button>
+      </div>
+      <div class="notice error" id="confirm-delete-photo" hidden>
+        <p>Dieses Foto wirklich löschen?</p>
+        <p id="static-delete-note" hidden>Dieses Testfoto verschwindet aus der Galerie. Die Datei im GitHub-Repository musst du dort entfernen.</p>
+        <div class="admin-actions">
+          <button class="button danger-button" id="delete-photo" type="button">Endgültig löschen</button>
+          <button class="button" id="cancel-delete-photo" type="button">Abbrechen</button>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <dialog class="dialog uploader admin-batch-dialog" id="batch-dialog" aria-labelledby="batch-title">
+    <div class="dialog-heading">
+      <h2 id="batch-title"></h2>
+      <button class="icon-button" id="close-batch" type="button" aria-label="Abbrechen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <p id="batch-summary"></p>
+    <form id="batch-form">
+      <fieldset id="batch-category-fields">
+        <legend>Kategorie ändern</legend>
+        <label for="batch-operation">Aktion</label>
+        <select id="batch-operation"><option value="add">Hinzufügen</option><option value="remove">Entfernen</option></select>
+        <label for="batch-category">Kategorie</label>
+        <select id="batch-category"></select>
+        <div id="batch-new-row" hidden><label for="batch-new-category">Neue Kategorie</label><input id="batch-new-category" maxlength="32"></div>
+      </fieldset>
+      <p class="notice error" id="batch-error" role="status" hidden></p>
+      <button class="button primary" type="submit" id="confirm-batch">Anwenden</button>
+    </form>
+  </dialog>
+</body>
+</html>

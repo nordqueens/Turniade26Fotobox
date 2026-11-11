@@ -8,3 +8,19 @@ SITE_ORIGINS = "https://nordqueens.github.io"
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "turniade-2026-fotos"
+
+[[ratelimits]]
+name = "UPLOAD_LOGIN_LIMIT"
+namespace_id = "26202601"
+
+  [ratelimits.simple]
+  limit = 8
+  period = 60
+
+[[ratelimits]]
+name = "PHOTO_REPORT_LIMIT"
+namespace_id = "26202602"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60

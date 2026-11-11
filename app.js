@@ -1,16 +1,11 @@
-import { apiBase, defaultTags, samplePhotos } from "./config.js";
+import { defaultTags, samplePhotos } from "./config.js";
+import { $, catalogChannel, chip, days, element, endpoint, icon, modeQuery, renderDayToggle, request, tagKey } from "./client.mjs";
+import { reportReasons } from "./upload/report-reasons.mjs";
 
-const days = ["Freitag", "Samstag", "Sonntag"];
-const $ = id => document.getElementById(id);
-const endpoint = apiBase.replace(/\/$/, "");
-const maxPhotoSize = 20 * 1024 * 1024;
-const maxTags = 8;
-const photos = new Map(samplePhotos.map(photo => [photo.id, photo]));
+const samples = new Map(samplePhotos.map(photo => [photo.id, photo]));
+const photos = endpoint ? new Map() : new Map(samples);
 const selection = new Set();
 const activeTags = new Set();
-const uploadTags = new Set();
-const newTags = new Set();
-const queuedFiles = [];
 let activeDay = days[0];
 let visiblePhotos = [];
 let viewerPhotos = [];
@@ -21,36 +16,11 @@ const canShareFiles = typeof navigator.share === "function" && typeof navigator.
 let sharePreparation;
 let shareFiles = [];
 let viewIndex = 0;
-let catalogUpdatedWhileViewing = false;
+let catalogRequest = 0;
+let catalogSnapshot;
+let reportTarget;
 let touchStart = null;
-let password = "";
-let uploading = false;
 let toastTimer;
-
-function element(tag, className, content) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (content) node.textContent = content;
-  return node;
-}
-
-function icon(name) {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  const use = document.createElementNS(svg.namespaceURI, "use");
-  svg.setAttribute("class", "icon");
-  svg.setAttribute("aria-hidden", "true");
-  use.setAttribute("href", "#i-" + name);
-  svg.append(use);
-  return svg;
-}
-
-function chip(text, pressed, action, className = "chip") {
-  const button = element("button", className, text);
-  button.type = "button";
-  button.setAttribute("aria-pressed", String(pressed));
-  button.addEventListener("click", () => action(button));
-  return button;
-}
 
 function availableTags(additional = []) {
   const labels = new Map();
@@ -61,22 +31,12 @@ function availableTags(additional = []) {
   return [...labels.values()].sort((a, b) => a.localeCompare(b, "de"));
 }
 
-function tagKey(tag) {
-  return tag.normalize("NFC").toLocaleLowerCase("de");
-}
-
 function renderDayFilters() {
-  const filters = $("day-filters");
-  filters.replaceChildren(...days.map(day => {
-    const button = chip(day, day === activeDay, () => {
-      if (day === activeDay) return;
-      activeDay = day;
-      for (const option of filters.children) option.setAttribute("aria-pressed", String(option.dataset.day === activeDay));
-      renderPhotos();
-    }, "day-tab");
-    button.dataset.day = day;
-    return button;
-  }));
+  renderDayToggle($("day-filters"), activeDay, day => {
+    if (activeDay === day) return;
+    activeDay = day;
+    renderPhotos();
+  });
 }
 
 function renderTagFilters() {
@@ -310,233 +270,97 @@ async function openShareSheet() {
   }
 }
 
-async function request(path, options = {}) {
-  const response = await fetch(endpoint + path, options);
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Der Fotodienst ist gerade nicht erreichbar.");
-  }
-  return response.json();
+function galleryPhoto(photo) {
+  if (photo.static) return { ...samples.get(photo.id), ...photo };
+  const source = endpoint + "/photos/" + encodeURIComponent(photo.id);
+  const revision = encodeURIComponent(photo.revision);
+  return {
+    ...photo, source: source + "?v=" + revision,
+    thumbnail: source + "?preview=1&v=" + revision,
+    download: source + "?download=1&v=" + revision
+  };
 }
 
-function addUploadedPhoto(photo) {
-  const source = endpoint + "/photos/" + encodeURIComponent(photo.id);
-  photos.set(photo.id, {
-    ...photo, source,
-    thumbnail: source + "?preview=1",
-    download: source + "?download=1"
-  });
+function renderCatalog() {
+  for (const id of selection) {
+    if (!photos.has(id)) selection.delete(id);
+  }
+  renderSelection();
+
+  if (slidePhoto && photos.get(slidePhoto.id)?.revision !== slidePhoto.revision) {
+    slidePhoto = undefined;
+    $("slide-image").removeAttribute("src");
+    $("slide-backdrop").removeAttribute("src");
+  }
+  syncSlideshow();
+
+  if ($("viewer").open) {
+    const current = viewerPhotos[viewIndex];
+    viewerPhotos = viewerPhotos.map(photo => photos.get(photo.id)).filter(Boolean);
+    const index = viewerPhotos.findIndex(photo => photo.id === current.id);
+    if (index < 0) {
+      if ($("report-dialog").open) $("report-dialog").close();
+      $("viewer").close();
+    } else {
+      showPhoto(index);
+    }
+  }
+  renderTagFilters();
+  renderPhotos();
 }
 
 async function loadCatalog() {
   if (!endpoint) return;
+  const version = ++catalogRequest;
   try {
-    const { photos: uploaded } = await request("/photos", { cache: "no-store" });
-    uploaded.forEach(addUploadedPhoto);
-    syncSlideshow();
+    const { photos: entries } = await request("/photos", { cache: "no-store" });
+    if (version !== catalogRequest) return;
     $("catalog-error").hidden = true;
-    if ($("viewer").open) catalogUpdatedWhileViewing = true;
-    else {
-      renderTagFilters();
-      renderPhotos();
-    }
+    const snapshot = JSON.stringify(entries);
+    if (snapshot === catalogSnapshot) return;
+    catalogSnapshot = snapshot;
+    photos.clear();
+    for (const photo of entries) photos.set(photo.id, galleryPhoto(photo));
+    renderCatalog();
   } catch {
-    $("catalog-error").hidden = false;
+    if (version === catalogRequest) $("catalog-error").hidden = false;
   }
 }
 
-function uploadFeedback(message, isError = false) {
-  const feedback = $("upload-feedback");
-  feedback.textContent = message;
-  feedback.hidden = !message;
-  feedback.classList.toggle("error", isError);
+function openReport() {
+  reportTarget = viewerPhotos[viewIndex];
+  if (!reportTarget) return;
+  $("report-error").hidden = true;
+  $("report-form").reset();
+  $("report-dialog").showModal();
 }
 
-function openUploader() {
-  $("upload-unavailable").hidden = Boolean(endpoint);
-  $("unlock-form").hidden = !endpoint;
-  $("upload-form").hidden = true;
-  $("uploader").showModal();
-  if (endpoint) $("password").focus();
-}
-
-function resetUploader() {
-  password = "";
-  $("unlock-form").reset();
-  $("upload-form").reset();
-  queuedFiles.length = 0;
-  uploadTags.clear();
-  newTags.clear();
-  uploadFeedback("");
-  renderQueue();
-}
-
-function authHeaders(value) {
-  return { "X-Upload-Password": encodeURIComponent(value) };
-}
-
-async function unlock(event) {
+async function submitReport(event) {
   event.preventDefault();
-  const form = $("unlock-form");
-  const input = $("password");
-  const button = form.querySelector("button");
-  const candidate = input.value;
+  const reason = new FormData(event.currentTarget).get("reason");
+  const target = reportTarget;
+  const button = $("confirm-report");
   button.disabled = true;
-  uploadFeedback("");
+  $("close-report").disabled = true;
+  $("report-error").hidden = true;
   try {
-    await request("/auth", { method: "POST", headers: authHeaders(candidate) });
-    if (!$("uploader").open || input.value !== candidate) return;
-    password = candidate;
-    form.reset();
-    form.hidden = true;
-    $("upload-form").hidden = false;
-    renderUploadTags();
-    $("upload-files").focus();
+    await request("/reports/" + encodeURIComponent(target.id), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason })
+    });
+    catalogChannel?.postMessage("catalog");
+    catalogRequest++;
+    catalogSnapshot = undefined;
+    photos.delete(target.id);
+    $("report-dialog").close();
+    renderCatalog();
+    notify("Danke. Das Foto ist jetzt ausgeblendet.");
+    loadCatalog();
   } catch (error) {
-    if ($("uploader").open && input.value === candidate) {
-      uploadFeedback(error.message, true);
-      input.select();
-    }
+    $("report-error").textContent = error.message;
+    $("report-error").hidden = false;
   } finally {
     button.disabled = false;
-  }
-}
-
-function renderUploadTags() {
-  $("upload-tags").replaceChildren(...availableTags(newTags).map(tag => chip(tag, uploadTags.has(tag), button => {
-    if (uploadTags.has(tag)) uploadTags.delete(tag);
-    else if (uploadTags.size < maxTags) uploadTags.add(tag);
-    else {
-      uploadFeedback("Wähle höchstens " + maxTags + " Tags pro Foto.", true);
-      return;
-    }
-    button.setAttribute("aria-pressed", String(uploadTags.has(tag)));
-    uploadFeedback("");
-  })));
-}
-
-function addTag() {
-  const input = $("new-tag");
-  const tag = input.value.trim().replace(/\s+/g, " ").normalize("NFC");
-  if (!tag) return;
-  if (days.some(day => tagKey(day) === tagKey(tag))) {
-    uploadFeedback("Freitag, Samstag und Sonntag stehen bereits bei „Tag“.", true);
-    return;
-  }
-  const knownTag = availableTags(newTags).find(item => tagKey(item) === tagKey(tag));
-  const label = knownTag || tag;
-  if (!uploadTags.has(label) && uploadTags.size >= maxTags) {
-    uploadFeedback("Wähle höchstens " + maxTags + " Tags pro Foto.", true);
-    return;
-  }
-  if (!knownTag) newTags.add(label);
-  uploadTags.add(label);
-  input.value = "";
-  renderUploadTags();
-  uploadFeedback("");
-  input.focus();
-}
-
-function renderQueue() {
-  $("upload-list").hidden = !queuedFiles.length;
-  $("upload-list").replaceChildren(...queuedFiles.map(item => {
-    const row = element("li", "", item.file.name);
-    const remove = element("button", "text-button", "Entfernen");
-    remove.type = "button";
-    remove.setAttribute("aria-label", item.file.name + " entfernen");
-    remove.addEventListener("click", () => {
-      queuedFiles.splice(queuedFiles.indexOf(item), 1);
-      renderQueue();
-      $("upload-files").focus();
-    });
-    row.append(remove);
-    return row;
-  }));
-}
-
-function queueFiles() {
-  const input = $("upload-files");
-  const rejected = [];
-  for (const file of input.files) {
-    if (!file.size || file.size > maxPhotoSize || !/\.(jpe?g|png|webp)$/i.test(file.name)) {
-      rejected.push(file.name);
-      continue;
-    }
-    if (!queuedFiles.some(item => item.file.name === file.name && item.file.size === file.size && item.file.lastModified === file.lastModified)) {
-      queuedFiles.push({ id: crypto.randomUUID(), file });
-    }
-  }
-  input.value = "";
-  renderQueue();
-  uploadFeedback(rejected.length ? "Bitte wähle JPG, PNG oder WebP bis 20 MB. Übersprungen: " + rejected.join(", ") : "", rejected.length > 0);
-}
-
-async function createPreview(file) {
-  const image = await createImageBitmap(file);
-  try {
-    const scale = Math.min(1, 960 / Math.max(image.width, image.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(image.width * scale));
-    canvas.height = Math.max(1, Math.round(image.height * scale));
-    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-    return await new Promise((resolve, reject) => {
-      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Vorschau konnte nicht erstellt werden.")), "image/webp", .76);
-    });
-  } finally {
-    image.close();
-  }
-}
-
-async function publish(event) {
-  event.preventDefault();
-  if (uploading || !password) return;
-  if (!queuedFiles.length) {
-    uploadFeedback("Wähle zuerst mindestens ein Foto aus.", true);
-    $("upload-files").focus();
-    return;
-  }
-  const day = $("upload-day").value;
-  const tags = [...uploadTags];
-  const batch = [...queuedFiles];
-  const failures = [];
-  const form = $("upload-form");
-  const button = $("publish-photos");
-  uploading = true;
-  form.inert = true;
-  button.disabled = true;
-  $("close-upload").disabled = true;
-  try {
-    for (const [index, item] of batch.entries()) {
-      uploadFeedback("Foto " + (index + 1) + " von " + batch.length + " wird hochgeladen …");
-      try {
-        const body = new FormData();
-        body.set("image", item.file);
-        body.set("preview", await createPreview(item.file), "preview");
-        body.set("day", day);
-        body.set("tags", JSON.stringify(tags));
-        const { photo } = await request("/photos/" + item.id, { method: "PUT", headers: authHeaders(password), body });
-        addUploadedPhoto(photo);
-        queuedFiles.splice(queuedFiles.indexOf(item), 1);
-      } catch (error) {
-        failures.push(item.file.name + " – " + error.message);
-      }
-    }
-    renderQueue();
-    syncSlideshow();
-    renderTagFilters();
-    renderPhotos();
-    if (failures.length) {
-      uploadFeedback((batch.length - failures.length) + " von " + batch.length + " veröffentlicht. " + failures.join(" · "), true);
-    } else {
-      $("uploader").close();
-      notify(batch.length === 1 ? "Dein Foto wurde veröffentlicht." : batch.length + " Fotos wurden veröffentlicht.");
-    }
-  } finally {
-    uploading = false;
-    form.inert = false;
-    button.disabled = false;
-    $("close-upload").disabled = false;
-    if ($("uploader").open) button.focus();
+    $("close-report").disabled = false;
   }
 }
 
@@ -591,29 +415,35 @@ function renderPhotosAfterViewer() {
   $("viewer-image").removeAttribute("src");
   viewerPhotos = [];
   touchStart = null;
-  if (!catalogUpdatedWhileViewing) return;
-  catalogUpdatedWhileViewing = false;
-  renderTagFilters();
-  renderPhotos();
+
 }
 
-$("open-upload").addEventListener("click", openUploader);
-$("close-upload").addEventListener("click", () => $("uploader").close());
-$("uploader").addEventListener("close", () => {
-  resetUploader();
-  $("open-upload").focus();
+$("open-admin").href = "admin.html" + modeQuery;
+const reportChoices = Object.entries(reportReasons).map(([value, label]) => {
+  const radio = element("input");
+  radio.type = "radio";
+  radio.name = "reason";
+  radio.value = value;
+  radio.required = true;
+  const option = element("label", "report-choice");
+  option.append(radio, element("span", "", label));
+  return option;
 });
-$("uploader").addEventListener("cancel", event => { if (uploading) event.preventDefault(); });
-$("unlock-form").addEventListener("submit", unlock);
-$("upload-form").addEventListener("submit", publish);
-$("upload-files").addEventListener("change", queueFiles);
-$("add-tag").addEventListener("click", addTag);
-$("new-tag").addEventListener("keydown", event => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    addTag();
-  }
+$("report-reasons").append(...reportChoices);
+
+$("open-report").hidden = !endpoint;
+$("open-report").addEventListener("click", openReport);
+$("close-report").addEventListener("click", () => $("report-dialog").close());
+$("report-form").addEventListener("submit", submitReport);
+$("report-dialog").addEventListener("cancel", event => {
+  if ($("confirm-report").disabled) event.preventDefault();
 });
+if (endpoint) {
+  catalogChannel?.addEventListener("message", loadCatalog);
+  window.addEventListener("pageshow", event => { if (event.persisted) loadCatalog(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadCatalog(); });
+  setInterval(() => { if (!document.hidden) loadCatalog(); }, 30_000);
+}
 
 renderDayFilters();
 renderTagFilters();
