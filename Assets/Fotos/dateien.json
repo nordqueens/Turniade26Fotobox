@@ -1,0 +1,19 @@
+---
+layout: null
+---
+[
+{%- assign comma = '' -%}
+{%- for file in site.static_files -%}
+  {%- assign path = file.path | remove_first: '/' -%}
+  {%- assign folder = path | split: '/' -%}
+  {%- assign extension = file.extname | downcase -%}
+  {%- if folder[0] == 'Assets' and folder[1] == 'Fotos' -%}
+    {%- if folder[2] == 'Freitag' or folder[2] == 'Samstag' or folder[2] == 'Sonntag' -%}
+      {%- if extension == '.jpg' or extension == '.jpeg' or extension == '.png' or extension == '.webp' -%}
+        {{ comma }}{{ path | jsonify }}
+        {%- assign comma = ',' -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
+]

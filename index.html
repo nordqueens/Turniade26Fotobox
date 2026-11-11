@@ -11,15 +11,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700..800&amp;family=DM+Sans:wght@400..800&amp;display=swap">
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="app.js?v=github1"></script>
+  <link rel="stylesheet" href="styles.css?v=weekdays1">
+  <script type="module" src="app.js?v=weekdays1"></script>
 </head>
 <body id="oben">
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
     <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
-    <symbol id="i-report" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5m0 4h.01"/></symbol>
     <symbol id="i-help" viewBox="0 0 24 24"><path d="M8.6 8.4a3.5 3.5 0 1 1 5.2 3.1c-1.1.7-1.8 1.3-1.8 2.5m0 4h.01"/></symbol>
     <filter id="transparent-paper" color-interpolation-filters="sRGB">
       <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.3333 -.3333 -.3333 0 1"/>
@@ -51,21 +50,13 @@
 
   <main class="wrap">
     <section class="gallery" id="galerie" aria-label="Fotos">
-      <div class="gallery-heading">
-        <p id="photo-count" role="status"></p>
-        <button class="text-button clear-filters" id="clear-filters" type="button">Filter löschen</button>
-      </div>
-      <div class="tag-filter" id="tag-row">
-        <span id="tag-label">Kategorien</span>
-        <div class="tag-scroll" id="tag-filter" role="group" aria-labelledby="tag-label"></div>
-      </div>
+      <p id="photo-count" role="status"></p>
       <p class="notice" id="catalog-error" role="status" hidden>Die hochgeladenen Fotos sind gerade nicht erreichbar. <button class="text-button" id="retry-catalog" type="button">Erneut laden</button></p>
       <div class="day-filters" id="day-filters" role="group" aria-label="Nach Wochentag filtern"></div>
       <div id="photo-groups"></div>
       <div class="empty-state" id="empty-state" hidden>
         <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>
         <h3>Hier sind keine Fotos</h3>
-        <button class="button" id="reset-filters" type="button">Kategoriefilter löschen</button>
       </div>
       <noscript><p>Aktiviere JavaScript, um die Fotos anzuzeigen und herunterzuladen.</p></noscript>
     </section>
@@ -90,25 +81,10 @@
       <button class="icon-button" id="viewer-prev" type="button" aria-label="Vorheriges Foto"><svg class="icon" aria-hidden="true"><use href="#i-prev"/></svg></button>
       <button class="icon-button" id="viewer-next" type="button" aria-label="Nächstes Foto"><svg class="icon" aria-hidden="true"><use href="#i-next"/></svg></button>
     </div>
-    <div class="viewer-bottom"><button class="icon-button report-button" id="open-report" type="button" aria-label="Foto melden" title="Foto melden" hidden><svg class="icon" aria-hidden="true"><use href="#i-report"/></svg></button><div class="photo-tags" id="viewer-tags" tabindex="0" aria-label="Kategorien des Fotos"></div><div class="save-actions">
+    <div class="viewer-bottom"><span class="weekday-label" id="viewer-day"></span><div class="save-actions">
       <button class="icon-button share-button" id="share-viewer" type="button" aria-label="Foto teilen oder sichern" hidden><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg></button>
       <a class="icon-button" id="viewer-download" aria-label="Foto herunterladen" download><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></a>
     </div></div>
-  </dialog>
-
-  <dialog class="dialog save-dialog" id="report-dialog" aria-labelledby="report-title">
-    <div class="dialog-heading">
-      <h2 id="report-title">Foto melden?</h2>
-      <button class="icon-button" id="close-report" type="button" aria-label="Meldung abbrechen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
-    </div>
-    <p>Die Meldung wird auf GitHub abgesendet. Bitte eine erwachsene Person um Hilfe, wenn du dort kein Konto hast.</p>
-    <form id="report-form">
-      <label for="report-reason">Warum meldest du das Foto?</label>
-      <select id="report-reason" name="reason" required>
-        <option value="" disabled selected>Grund auswählen</option>
-      </select>
-      <button class="button primary" id="confirm-report" type="submit">Auf GitHub melden</button>
-    </form>
   </dialog>
 
   <dialog class="dialog help-dialog" id="help" aria-labelledby="help-title">
@@ -118,10 +94,9 @@
     </div>
     <ul class="help-list">
       <li>Tippe auf ein Foto, um es groß zu sehen. Wische nach links oder rechts, um weiterzublättern.</li>
-      <li>Tippe auf den Download-Pfeil am Foto, um es zu speichern. Mit dem Ausrufezeichen kannst du ein Foto melden.</li>
+      <li>Tippe auf den Download-Pfeil am Foto, um es zu speichern.</li>
       <li>Für mehrere Fotos tippst du auf die Kästchen und dann auf <strong>Herunterladen</strong>. Wenn dein Browser nachfragt, erlaube mehrere Downloads.</li>
       <li>Wenn du das Teilen-Symbol siehst, kannst du darüber im Handy-Menü „Bild sichern“ wählen, falls es angeboten wird.</li>
-      <li>Mit den Reitern wechselst du den Wochentag. „Filter löschen“ setzt alle Kategorien zurück.</li>
     </ul>
   </dialog>
 

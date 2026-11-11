@@ -1,11 +1,9 @@
-import { defaultTags, samplePhotos } from "./config.js?v=github1";
-import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs?v=github1";
-import { publicPhotos, reportLink } from "./github.mjs?v=github1";
-import { reportReasons } from "./upload/report-reasons.mjs";
+import { samplePhotos } from "./config.js?v=weekdays1";
+import { $, catalogChannel, days, element, icon, renderDayToggle } from "./client.mjs?v=weekdays1";
+import { publicPhotos, photoURL } from "./github.mjs?v=weekdays1";
 
 const photos = new Map(samplePhotos.map(photo => [photo.id, photo]));
 const selection = new Set();
-const activeTags = new Set();
 let activeDay = days[0];
 let visiblePhotos = [];
 let viewerPhotos = [];
@@ -15,18 +13,8 @@ let shareFiles = [];
 let viewIndex = 0;
 let catalogRequest = 0;
 let catalogSnapshot;
-let reportTarget;
 let touchStart = null;
 let toastTimer;
-
-function availableTags(additional = []) {
-  const labels = new Map();
-  for (const tag of [...defaultTags, ...[...photos.values()].flatMap(photo => photo.tags), ...additional]) {
-    const key = tagKey(tag);
-    if (!labels.has(key)) labels.set(key, tag);
-  }
-  return [...labels.values()].sort((a, b) => a.localeCompare(b, "de"));
-}
 
 function renderDayFilters() {
   renderDayToggle($("day-filters"), activeDay, day => {
@@ -36,36 +24,8 @@ function renderDayFilters() {
   });
 }
 
-function renderTagFilters() {
-  const tags = availableTags();
-  const filter = $("tag-filter");
-  filter.replaceChildren(...tags.map(tag => {
-    const key = tagKey(tag);
-    return chip(tag, activeTags.has(key), button => {
-      if (activeTags.has(key)) activeTags.delete(key);
-      else activeTags.add(key);
-      button.setAttribute("aria-pressed", String(activeTags.has(key)));
-      renderPhotos();
-    });
-  }));
-  $("tag-row").hidden = !tags.length;
-}
-
-function resetFilters() {
-  activeTags.clear();
-  for (const button of $("tag-filter").children) button.setAttribute("aria-pressed", "false");
-  renderPhotos();
-  $("clear-filters").focus();
-}
-
-function labelsFor(photo) {
-  const day = element("span", "photo-tag day", photo.day);
-  day.dataset.day = photo.day;
-  return [day, ...photo.tags.map(tag => element("span", "photo-tag", tag))];
-}
-
 function setDownload(link, photo) {
-  link.href = photo.download || photo.source;
+  link.href = photoURL(photo.source);
   link.download = photo.name;
 }
 
@@ -76,11 +36,11 @@ function photoCard(photo, index) {
   const description = photo.alt || photo.name;
   open.type = "button";
   open.setAttribute("aria-label", "Foto öffnen: " + description);
-  image.src = photo.thumbnail;
+  image.src = photoURL(photo.thumbnail);
   image.alt = description;
   image.decoding = "async";
   image.loading = index < 3 ? "eager" : "lazy";
-  image.addEventListener("error", () => { image.src = photo.source; }, { once: true });
+  image.addEventListener("error", () => { image.src = photoURL(photo.source); }, { once: true });
   open.append(image);
   open.addEventListener("click", () => openViewer(visiblePhotos, index));
 
@@ -110,17 +70,12 @@ function photoCard(photo, index) {
 }
 
 function renderPhotos() {
-  visiblePhotos = [...photos.values()].filter(photo => {
-    if (photo.day !== activeDay) return false;
-    const keys = photo.tags.map(tagKey);
-    return [...activeTags].every(tag => keys.includes(tag));
-  });
+  visiblePhotos = [...photos.values()].filter(photo => photo.day === activeDay);
 
   $("photo-count").textContent = visiblePhotos.length === 1 ? "1 Foto" : visiblePhotos.length + " Fotos";
   const container = $("photo-groups");
   container.replaceChildren();
   $("empty-state").hidden = visiblePhotos.length > 0;
-  $("reset-filters").hidden = activeTags.size === 0;
   if (!visiblePhotos.length) return;
 
   const group = element("section", "photo-group");
@@ -144,10 +99,11 @@ function openViewer(photosToShow, index) {
 function showPhoto(index) {
   viewIndex = (index + viewerPhotos.length) % viewerPhotos.length;
   const photo = viewerPhotos[viewIndex];
-  $("viewer-image").src = photo.source;
+  $("viewer-image").src = photoURL(photo.source);
   $("viewer-image").alt = photo.alt || photo.name;
   $("viewer-count").textContent = (viewIndex + 1) + " / " + viewerPhotos.length;
-  $("viewer-tags").replaceChildren(...labelsFor(photo));
+  $("viewer-day").textContent = photo.day;
+  $("viewer-day").dataset.day = photo.day;
   $("viewer-prev").hidden = viewerPhotos.length < 2;
   $("viewer-next").hidden = viewerPhotos.length < 2;
   setDownload($("viewer-download"), photo);
@@ -208,7 +164,7 @@ async function prepareShare(selected) {
   try {
     const files = [];
     for (const photo of selected) {
-      const response = await fetch(photo.source, { signal: controller.signal });
+      const response = await fetch(photoURL(photo.source), { signal: controller.signal });
       if (!response.ok) throw new Error("Ein Foto konnte nicht geladen werden.");
       const blob = await response.blob();
       files.push(new File([blob], photo.name, { type: blob.type }));
@@ -251,13 +207,11 @@ function renderCatalog() {
     viewerPhotos = viewerPhotos.map(photo => photos.get(photo.id)).filter(Boolean);
     const index = viewerPhotos.findIndex(photo => photo.id === current.id);
     if (index < 0) {
-      if ($("report-dialog").open) $("report-dialog").close();
       $("viewer").close();
     } else {
       showPhoto(index);
     }
   }
-  renderTagFilters();
   renderPhotos();
 }
 
@@ -278,25 +232,8 @@ async function loadCatalog() {
   }
 }
 
-function openReport() {
-  reportTarget = viewerPhotos[viewIndex];
-  if (!reportTarget) return;
-  $("report-form").reset();
-  $("report-dialog").showModal();
-}
-
-function submitReport(event) {
-  event.preventDefault();
-  const reason = new FormData(event.currentTarget).get("reason");
-  if (!reportTarget || !Object.hasOwn(reportReasons, reason)) return;
-  window.open(reportLink(reportTarget.id, reason), "_blank", "noopener,noreferrer");
-  $("report-dialog").close();
-}
-
 $("open-help").addEventListener("click", () => $("help").showModal());
 $("close-help").addEventListener("click", () => $("help").close());
-$("reset-filters").addEventListener("click", resetFilters);
-$("clear-filters").addEventListener("click", resetFilters);
 $("retry-catalog").addEventListener("click", loadCatalog);
 $("download-selection").addEventListener("click", downloadSelection);
 $("share-selection").hidden = !canShareFiles;
@@ -314,7 +251,6 @@ $("viewer").addEventListener("close", renderPhotosAfterViewer);
 $("viewer-prev").addEventListener("click", () => showPhoto(viewIndex - 1));
 $("viewer-next").addEventListener("click", () => showPhoto(viewIndex + 1));
 $("viewer").addEventListener("keydown", event => {
-  if (event.target.closest("#viewer-tags")) return;
   if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
     event.preventDefault();
     showPhoto(viewIndex + (event.key === "ArrowLeft" ? -1 : 1));
@@ -335,18 +271,11 @@ function renderPhotosAfterViewer() {
 
 }
 
-$("report-reason").append(...Object.entries(reportReasons).map(([value, label]) => new Option(label, value)));
-
-$("open-report").hidden = false;
-$("open-report").addEventListener("click", openReport);
-$("close-report").addEventListener("click", () => $("report-dialog").close());
-$("report-form").addEventListener("submit", submitReport);
 catalogChannel?.addEventListener("message", loadCatalog);
 window.addEventListener("pageshow", event => { if (event.persisted) loadCatalog(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) loadCatalog(); });
 setInterval(() => { if (!document.hidden) loadCatalog(); }, 90_000);
 
 renderDayFilters();
-renderTagFilters();
 renderPhotos();
 loadCatalog();

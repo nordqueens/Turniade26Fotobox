@@ -1,19 +1,13 @@
-import { defaultTags } from "./config.js?v=github1";
-import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs?v=github1";
-import { adminPhotos as fetchAdminPhotos, adminPreview, checkPassword, dismissReports, editPhotos, publishPhotos } from "./github.mjs?v=github1";
-import { reportReasonLabel } from "./upload/report-reasons.mjs";
+import { $, catalogChannel, days, element, icon, renderDayToggle } from "./client.mjs?v=weekdays1";
+import { adminPhotos as fetchAdminPhotos, adminPreview, checkPassword, editPhotos, publishPhotos } from "./github.mjs?v=weekdays1";
 
 const maxPhotoSize = 20 * 1024 * 1024;
-const maxTags = 8;
-const uploadTags = new Set();
-const newTags = new Set();
-const editTags = new Set();
 const queuedFiles = [];
 const sessionKey = "fotobox-github:" + location.pathname;
 const today = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format();
 let uploadDay = days.includes(today) ? today : days[0];
 let uploadToken = readSession();
-let adminView = ["upload", "reported", "all"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "upload";
+let adminView = ["upload", "all"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "upload";
 let adminPhotos = [];
 let adminLoaded = false;
 let adminListRequest = 0;
@@ -83,53 +77,6 @@ async function unlock(event) {
   }
 }
 
-function tagChoices(selected) {
-  const labels = new Map();
-  for (const category of [...defaultTags, ...adminPhotos.flatMap(photo => photo.tags), ...selected, ...newTags]) {
-    if (!labels.has(tagKey(category))) labels.set(tagKey(category), category);
-  }
-  return [...labels.values()].sort((a, b) => a.localeCompare(b, "de"));
-}
-
-function renderTagPicker(container, selected) {
-  $(container).replaceChildren(...tagChoices(selected).map(tag => {
-    const selectedLabel = () => [...selected].find(value => tagKey(value) === tagKey(tag));
-    return chip(tag, Boolean(selectedLabel()), button => {
-      const existing = selectedLabel();
-      if (existing) selected.delete(existing);
-      else if (selected.size < maxTags) selected.add(tag);
-      else {
-        uploadFeedback("Wähle höchstens " + maxTags + " Kategorien pro Foto.", true);
-        return;
-      }
-      button.setAttribute("aria-pressed", String(Boolean(selectedLabel())));
-      uploadFeedback("");
-    });
-  }));
-}
-
-function addTag(input, selected, container) {
-  const tag = input.value.trim().replace(/\s+/g, " ").normalize("NFC");
-  if (!tag) return;
-  if (days.some(day => tagKey(day) === tagKey(tag))) {
-    uploadFeedback("Wochentage wählst du im eigenen Feld aus.", true);
-    return;
-  }
-  if (![...selected].some(value => tagKey(value) === tagKey(tag))) {
-    if (selected.size >= maxTags) {
-      uploadFeedback("Wähle höchstens " + maxTags + " Kategorien pro Foto.", true);
-      return;
-    }
-    const known = tagChoices(selected).find(value => tagKey(value) === tagKey(tag));
-    if (!known) newTags.add(tag);
-    selected.add(known || tag);
-  }
-  input.value = "";
-  renderTagPicker(container, selected);
-  uploadFeedback("");
-  input.focus();
-}
-
 function requireAdminLogin() {
   saveSession("");
   adminListRequest++;
@@ -149,7 +96,6 @@ function clearEditor() {
   $("edit-image").hidden = true;
   $("edit-photo-form").reset();
   $("confirm-delete-photo").hidden = true;
-  editTags.clear();
   editPhoto = undefined;
 }
 
@@ -166,12 +112,8 @@ function showAdminView(view) {
   $("upload-form").hidden = view !== "upload";
   $("admin-library").hidden = view === "upload";
   uploadFeedback("");
-  if (view === "upload") {
-      $("admin-list").replaceChildren();
-    renderTagPicker("upload-tags", uploadTags);
-  } else {
-    renderAdminLibrary();
-  }
+  if (view === "upload") $("admin-list").replaceChildren();
+  else renderAdminLibrary();
 }
 
 function renderAdminSelection() {
@@ -180,17 +122,16 @@ function renderAdminSelection() {
 }
 
 function renderAdminLibrary() {
-  const shown = adminView === "reported" ? adminPhotos.filter(photo => photo.status === "reported") : adminPhotos;
+  const shown = adminPhotos;
   const ids = new Set(shown.map(photo => photo.id));
   for (const id of adminSelection) if (!ids.has(id)) adminSelection.delete(id);
   renderAdminSelection();
   $("admin-list-status").textContent = !adminLoaded ? "Fotos werden geladen …"
     : shown.length ? shown.length + (shown.length === 1 ? " Foto" : " Fotos")
-    : adminView === "reported" ? "Keine offenen Meldungen." : "Noch keine Fotos.";
+    : "Noch keine Fotos.";
   $("admin-list").replaceChildren(...shown.map(photo => {
     const row = element("li", "admin-photo-card");
     row.dataset.day = photo.day;
-    if (adminView === "all" && photo.status === "reported") row.classList.add("is-reported");
     const open = element("button", "admin-photo-open");
     open.type = "button";
     open.setAttribute("aria-label", "Foto bearbeiten: " + (photo.alt || photo.name));
@@ -200,10 +141,6 @@ function renderAdminLibrary() {
     image.src = adminPreview(photo);
     open.append(image);
     open.addEventListener("click", () => openEditor(photo));
-    if (adminView === "reported") {
-      row.append(open);
-      return row;
-    }
     const select = element("button", "select-photo");
     select.type = "button";
     select.setAttribute("aria-label", "Foto auswählen: " + (photo.alt || photo.name));
@@ -221,10 +158,9 @@ function renderAdminLibrary() {
       renderAdminSelection();
     });
     const info = element("div", "admin-photo-info");
-    const label = element("span", "photo-tag day", photo.day);
+    const label = element("span", "weekday-label", photo.day);
     label.dataset.day = photo.day;
     info.append(label);
-    if (photo.status === "reported") info.append(element("span", "admin-report-badge", "Gemeldet"));
     row.append(open, select, info);
     return row;
   }));
@@ -240,12 +176,7 @@ async function loadAdminPhotos() {
     adminPhotos = entries;
     adminLoaded = true;
     $("retry-admin-list").hidden = true;
-    const count = entries.filter(photo => photo.status === "reported").length;
-    $("admin-nav").querySelector('[data-admin-view="reported"]').textContent = "Gemeldet (" + count + ")";
-    if (changed && !uploading) {
-      if (adminView === "upload") renderTagPicker("upload-tags", uploadTags);
-      else if (!editPhoto) renderAdminLibrary();
-    }
+    if (changed && !uploading && adminView === "all" && !editPhoto) renderAdminLibrary();
   } catch (error) {
     if (version !== adminListRequest || uploading) return;
     if (error.status === 401) {
@@ -261,17 +192,10 @@ async function loadAdminPhotos() {
 function openEditor(photo) {
   clearEditor();
   editPhoto = photo;
-  for (const tag of photo.tags) editTags.add(tag);
-  const reported = photo.status === "reported";
   $("edit-name").textContent = photo.name;
-  $("edit-name").hidden = reported;
   $("edit-day").value = photo.day;
-  $("edit-report").hidden = !reported;
-  $("edit-report-reason").textContent = reportReasonLabel(photo.reportReason);
-  $("dismiss-report").hidden = !reported;
   $("admin-library").hidden = true;
   $("edit-photo-form").hidden = false;
-  renderTagPicker("edit-tags", editTags);
   $("admin-back").focus();
   uploadFeedback("");
 
@@ -296,7 +220,6 @@ async function mutatePhoto(action) {
       const body = new FormData();
       body.set("revision", photo.revision);
       body.set("day", $("edit-day").value);
-      body.set("tags", JSON.stringify([...editTags]));
       const file = $("edit-replacement").files[0];
       if (file) {
         if (!validUpload(file)) throw new Error("Wähle JPG, PNG oder WebP bis 20 MB.");
@@ -305,9 +228,6 @@ async function mutatePhoto(action) {
       }
       await editPhotos(uploadToken, [{ id: photo.id, form: body }]);
       success = "Änderungen gespeichert.";
-    } else if (action === "dismiss") {
-      await dismissReports(uploadToken, photo.id);
-      success = "Das Foto ist wieder in der Galerie sichtbar.";
     } else {
       await editPhotos(uploadToken, [{ id: photo.id, revision: photo.revision }]);
       success = "Foto gelöscht.";
@@ -331,6 +251,9 @@ async function mutatePhoto(action) {
 
 function renderQueue() {
   $("upload-list").hidden = !queuedFiles.length;
+  $("upload-submit-label").textContent = queuedFiles.length > 1
+    ? queuedFiles.length + " Fotos veröffentlichen"
+    : queuedFiles.length === 1 ? "1 Foto veröffentlichen" : "Fotos veröffentlichen";
   $("upload-list").replaceChildren(...queuedFiles.map(item => {
     const row = element("li", "", item.file.name);
     const remove = element("button", "text-button", "Entfernen");
@@ -392,7 +315,6 @@ async function publish(event) {
     return;
   }
   const day = uploadDay;
-  const tags = [...uploadTags];
   const batch = [...queuedFiles];
   const form = $("upload-form");
   const button = $("publish-photos");
@@ -408,7 +330,6 @@ async function publish(event) {
       body.set("image", item.file);
       body.set("preview", await createPreview(item.file), "preview");
       body.set("day", day);
-      body.set("tags", JSON.stringify(tags));
       pending.push({ id: item.id, form: body });
     }
     uploadFeedback("Fotos werden in GitHub gespeichert …");
@@ -432,21 +353,6 @@ async function publish(event) {
 $("unlock-form").addEventListener("submit", unlock);
 $("upload-form").addEventListener("submit", publish);
 $("upload-files").addEventListener("change", queueFiles);
-for (const [buttonId, inputId, selected, container] of [
-  ["add-tag", "new-tag", uploadTags, "upload-tags"],
-  ["add-edit-tag", "edit-new-tag", editTags, "edit-tags"]
-]) {
-  const input = $(inputId);
-  const add = () => addTag(input, selected, container);
-  $(buttonId).addEventListener("click", add);
-  input.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      add();
-    }
-  });
-}
-
 for (const button of $("admin-nav").querySelectorAll("button")) {
   button.addEventListener("click", () => showAdminView(button.dataset.adminView));
 }
@@ -456,7 +362,6 @@ $("edit-photo-form").addEventListener("submit", event => {
   event.preventDefault();
   mutatePhoto("save");
 });
-$("dismiss-report").addEventListener("click", () => mutatePhoto("dismiss"));
 $("ask-delete-photo").addEventListener("click", () => {
   $("confirm-delete-photo").hidden = false;
   $("cancel-delete-photo").focus();
@@ -468,46 +373,13 @@ $("cancel-delete-photo").addEventListener("click", () => {
 $("delete-photo").addEventListener("click", () => mutatePhoto("delete"));
 
 
-let batchAction;
 let batchPhotos = [];
 
-function renderBatchCategories() {
-  const select = $("batch-category");
-  const add = $("batch-operation").value === "add";
-  const prior = select.value;
-  const categories = add
-    ? tagChoices(new Set())
-    : [...new Map(batchPhotos.flatMap(photo => photo.tags).map(tag => [tagKey(tag), tag])).values()]
-      .sort((a, b) => a.localeCompare(b, "de"));
-  select.replaceChildren(...categories.map(label => new Option(label, label)));
-  if (add) select.append(new Option("Neue Kategorie …", ""));
-  else if (!categories.length) select.append(new Option("Keine Kategorien vorhanden", ""));
-  if ([...select.options].some(option => option.value === prior)) select.value = prior;
-  toggleBatchNewCategory();
-}
-
-function toggleBatchNewCategory() {
-  const create = $("batch-operation").value === "add" && !$("batch-category").value;
-  $("batch-new-row").hidden = !create;
-  $("batch-new-category").required = create && batchAction === "categories";
-}
-
-function openBatch(action) {
+function openBatch() {
   if (!adminSelection.size) return;
-  batchAction = action;
   batchPhotos = adminPhotos.filter(photo => adminSelection.has(photo.id));
-  const deleting = action === "delete";
-  $("batch-form").reset();
-  $("batch-title").textContent = deleting ? "Auswahl löschen" : "Kategorien ändern";
-  $("batch-summary").textContent = deleting
-    ? batchPhotos.length + " ausgewählte Fotos wirklich löschen?" + (batchPhotos.length ? " Im Git-Verlauf können die Dateien weiter abrufbar sein." : "")
-    : "Die Änderung gilt für die " + batchPhotos.length + " ausgewählten Fotos.";
-  $("batch-category-fields").hidden = deleting;
-  $("batch-category-fields").disabled = deleting;
+  $("batch-summary").textContent = batchPhotos.length + " ausgewählte Fotos wirklich löschen? Im Git-Verlauf können die Dateien weiter abrufbar sein.";
   $("batch-error").hidden = true;
-  $("confirm-batch").textContent = deleting ? "Endgültig löschen" : "Anwenden";
-  $("confirm-batch").classList.toggle("danger-button", deleting);
-  if (!deleting) renderBatchCategories();
   $("batch-dialog").showModal();
 }
 
@@ -515,16 +387,6 @@ async function applyBatch(event) {
   event.preventDefault();
   if (uploading) return;
   const selected = batchPhotos;
-  const deleting = batchAction === "delete";
-  const remove = $("batch-operation").value === "remove";
-  const choice = $("batch-category").value;
-  const category = (!remove && !choice ? $("batch-new-category").value : choice)
-    .trim().replace(/\s+/g, " ").normalize("NFC");
-  if (!deleting && (!category || days.some(day => tagKey(day) === tagKey(category)))) {
-    $("batch-error").textContent = "Wähle eine Kategorie oder gib einen gültigen Namen ein.";
-    $("batch-error").hidden = false;
-    return;
-  }
   if (!selected.length) {
     $("batch-dialog").close();
     return;
@@ -535,24 +397,14 @@ async function applyBatch(event) {
   $("close-batch").disabled = true;
   $("batch-error").hidden = true;
   try {
-    const edits = selected.map(photo => {
-      if (deleting) return { id: photo.id, revision: photo.revision };
-      const tags = photo.tags.filter(tag => tagKey(tag) !== tagKey(category));
-      if (!remove) tags.push(photo.tags.find(tag => tagKey(tag) === tagKey(category)) || category);
-      if (tags.length > maxTags) throw new Error(photo.name + " hat bereits acht Kategorien.");
-      const form = new FormData();
-      form.set("revision", photo.revision);
-      form.set("day", photo.day);
-      form.set("tags", JSON.stringify(tags));
-      return { id: photo.id, form };
-    });
+    const edits = selected.map(photo => ({ id: photo.id, revision: photo.revision }));
     await editPhotos(uploadToken, edits);
     for (const photo of selected) adminSelection.delete(photo.id);
     $("batch-dialog").close();
     catalogChannel?.postMessage("catalog");
     renderAdminLibrary();
     loadAdminPhotos();
-    uploadFeedback(selected.length + (deleting ? " Fotos gelöscht." : " Fotos bearbeitet."));
+    uploadFeedback(selected.length + " Fotos gelöscht.");
   } catch (error) {
     if (error.status === 401) {
       $("batch-dialog").close();
@@ -576,8 +428,6 @@ $("sign-out").addEventListener("click", () => {
   adminPhotos = [];
   adminLoaded = false;
   queuedFiles.length = 0;
-  uploadTags.clear();
-  newTags.clear();
   $("upload-form").reset();
   renderQueue();
   requireAdminLogin();
@@ -588,10 +438,7 @@ $("clear-admin-selection").addEventListener("click", () => {
   adminSelection.clear();
   renderAdminLibrary();
 });
-$("open-batch-categories").addEventListener("click", () => openBatch("categories"));
-$("open-batch-delete").addEventListener("click", () => openBatch("delete"));
-$("batch-operation").addEventListener("change", renderBatchCategories);
-$("batch-category").addEventListener("change", toggleBatchNewCategory);
+$("open-batch-delete").addEventListener("click", openBatch);
 $("batch-form").addEventListener("submit", applyBatch);
 $("close-batch").addEventListener("click", () => $("batch-dialog").close());
 $("batch-dialog").addEventListener("cancel", event => {

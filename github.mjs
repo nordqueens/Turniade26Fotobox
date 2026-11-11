@@ -1,5 +1,4 @@
-import { publishingBranch, repository, samplePhotos, passwordCheck } from "./config.js?v=github1";
-import { reportReasons } from "./upload/report-reasons.mjs";
+import { publishingBranch, repository, samplePhotos, passwordCheck } from "./config.js?v=weekdays1";
 
 const api = "https://api.github.com/repos/" + repository;
 const catalogFile = "Assets/Fotos/katalog.json";
@@ -7,8 +6,6 @@ const catalogURL = new URL(catalogFile, import.meta.url);
 const encodePath = value => value.split("/").map(encodeURIComponent).join("/");
 const branch = encodePath(publishingBranch);
 const samples = new Map(samplePhotos.map(photo => [photo.id, { ...photo, revision: "original", static: true }]));
-const reportPattern = /^\[Fotobox\] (probe-\d+|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}) ([a-z_]+)$/;
-let publicReportCache;
 
 function failure(status, message) {
   return Object.assign(new Error(message), { status });
@@ -31,71 +28,72 @@ async function github(path, { token, method = "GET", body, signal } = {}) {
   return response.json();
 }
 
-function mergePhotos(catalog) {
+function manualPhoto(path) {
+  const match = /^Assets\/Fotos\/(Freitag|Samstag|Sonntag)\/(.+\.(?:jpe?g|png|webp))$/i.exec(path);
+  if (!match) return null;
+  const day = ["Freitag", "Samstag", "Sonntag"].find(value => value === match[1]);
+  if (!day) return null;
+  return {
+    id: "file:" + path, name: path.split("/").at(-1), day,
+    source: path, thumbnail: path, revision: "original"
+  };
+}
+
+function withoutTags(photo) {
+  const { tags: ignored, ...entry } = photo;
+  return entry;
+}
+
+function mergePhotos(catalog, files) {
   const photos = new Map(samples);
+  for (const path of files) {
+    const photo = manualPhoto(path);
+    if (photo) photos.set(photo.id, photo);
+  }
   for (const photo of catalog.photos) {
     if (photo.deleted) photos.delete(photo.id);
-    else photos.set(photo.id, photo);
+    else if (!photo.id.startsWith("file:") || photos.has(photo.id) || photo.source !== photo.id.slice(5)) {
+      photos.set(photo.id, withoutTags(photo));
+    }
   }
   return photos;
 }
 
-async function readReports(token) {
-  const reports = new Map();
-  for (let page = 1; ; page++) {
-    const issues = await github("/issues?state=open&per_page=100&page=" + page, { token });
-    for (const issue of issues) {
-      const match = !issue.pull_request && issue.title.match(reportPattern);
-      if (!match || !Object.hasOwn(reportReasons, match[2])) continue;
-      const [, id, reason] = match;
-      const current = reports.get(id) || { reason, numbers: [] };
-      current.numbers.push(issue.number);
-      reports.set(id, current);
-    }
-    if (issues.length < 100) return reports;
-  }
-}
-
-async function publicReports() {
-  if (publicReportCache && Date.now() - publicReportCache.time < 90_000) return publicReportCache.reports;
-  try {
-    publicReportCache = { time: Date.now(), reports: await readReports() };
-  } catch {
-    publicReportCache = { time: Date.now(), reports: publicReportCache?.reports || new Map() };
-  }
-  return publicReportCache.reports;
-}
-
 async function branchSnapshot(token) {
   const { object } = await github("/git/ref/heads/" + branch, { token });
-  const commit = await github("/git/commits/" + object.sha, { token });
-  const file = await github("/contents/" + catalogFile + "?ref=" + object.sha, { token });
+  const [commit, file] = await Promise.all([
+    github("/git/commits/" + object.sha, { token }),
+    github("/contents/" + catalogFile + "?ref=" + object.sha, { token })
+  ]);
+  const result = await github("/git/trees/" + commit.tree.sha + "?recursive=1", { token });
+  if (result.truncated) throw failure(503, "Die Liste der Fotos konnte nicht vollständig geladen werden.");
+  const files = result.tree.filter(entry => entry.type === "blob").map(entry => entry.path);
   const bytes = Uint8Array.from(atob(file.content.replace(/\s/g, "")), value => value.charCodeAt(0));
   const catalog = JSON.parse(new TextDecoder().decode(bytes));
-  return { commit, catalog };
+  return { commit, catalog, files };
+}
+
+export function photoURL(path) {
+  return new URL(encodePath(path), import.meta.url).href;
 }
 
 export async function publicPhotos() {
-  const [response, reports] = await Promise.all([fetch(catalogURL, { cache: "no-store" }), publicReports()]);
+  const [response, filesResponse] = await Promise.all([
+    fetch(catalogURL, { cache: "no-store" }),
+    fetch(new URL("Assets/Fotos/dateien.json", import.meta.url), { cache: "no-store" })
+  ]);
   if (!response.ok) throw failure(response.status, "Der Fotokatalog konnte nicht geladen werden.");
-  const photos = [...mergePhotos(await response.json()).values()].filter(photo => !reports.has(photo.id));
-  return { photos };
+  if (!filesResponse.ok) throw failure(filesResponse.status, "Die Fotoordner konnten nicht geladen werden.");
+  const index = await filesResponse.text();
+  // A plain local web server delivers the Jekyll source template.
+  const files = index.startsWith("---") && ["127.0.0.1", "localhost"].includes(location.hostname)
+    ? [] : JSON.parse(index);
+  return { photos: [...mergePhotos(await response.json(), files).values()] };
 }
 
 export async function adminPhotos(token) {
-  const [{ catalog }, reports] = await Promise.all([branchSnapshot(token), readReports(token)]);
-  return { photos: [...mergePhotos(catalog).values()].map(photo => {
-    const report = reports.get(photo.id);
-    return { ...photo, status: report ? "reported" : "visible", reportReason: report?.reason };
-  }) };
-}
-
-export function reportLink(id, reason) {
-  const query = new URLSearchParams({
-    title: "[Fotobox] " + id + " " + reason,
-    body: "Meldegrund: " + reportReasons[reason] + "\n\nBitte keine Namen oder persönlichen Daten hier eintragen."
-  });
-  return "https://github.com/" + repository + "/issues/new?" + query;
+  const { catalog, files } = await branchSnapshot(token);
+  return { photos: [...mergePhotos(catalog, files).values()] };
 }
 
 export async function checkPassword(password) {
@@ -126,7 +124,7 @@ function treeFile(path, sha) {
   return { path, sha, mode: "100644", type: "blob" };
 }
 
-async function prepareMedia(id, form, token) {
+async function prepareMedia(form, token) {
   const original = form.get("image");
   const preview = form.get("preview");
   const extension = original.name.split(".").at(-1).toLowerCase();
@@ -135,8 +133,8 @@ async function prepareMedia(id, form, token) {
   }
   const previewExtension = preview.type === "image/webp" ? "webp" : "png";
   const version = crypto.randomUUID();
-  const source = "Assets/Fotos/Originale/" + id + "-" + version + "." + extension;
-  const thumbnail = "Assets/Fotos/Vorschau/" + id + "-" + version + "." + previewExtension;
+  const source = "Assets/Fotos/Originale/" + version + "." + extension;
+  const thumbnail = "Assets/Fotos/Vorschau/" + version + "." + previewExtension;
   const sourceBlob = await createBlob(original, token);
   const previewBlob = await createBlob(preview, token);
   return {
@@ -155,24 +153,25 @@ function revisionMatches(photo, revision) {
 
 async function commitChanges(token, changes, message) {
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { commit, catalog } = await branchSnapshot(token);
-    const photos = mergePhotos(catalog);
-    const overrides = new Map(catalog.photos.map(photo => [photo.id, photo]));
+    const { commit, catalog, files: existingPaths } = await branchSnapshot(token);
+    const photos = mergePhotos(catalog, existingPaths);
+    const overrides = new Map(catalog.photos.map(photo => [photo.id, withoutTags(photo)]));
     const files = [];
     for (const change of changes) {
       const previous = photos.get(change.id);
       if (change.kind === "create" && (previous || overrides.has(change.id))) continue;
       if (change.kind !== "create") revisionMatches(previous, change.revision);
       if (change.kind === "delete" || change.media) {
-        if (previous) files.push(...originalPaths(previous).map(path => treeFile(path, null)));
+        if (previous) files.push(...originalPaths(previous).filter(path => existingPaths.includes(path)).map(path => treeFile(path, null)));
       }
       if (change.kind === "delete") {
-        overrides.set(change.id, { id: change.id, deleted: true });
+        if (change.id.startsWith("file:")) overrides.delete(change.id);
+        else overrides.set(change.id, { id: change.id, deleted: true });
       } else {
         const { files: addedFiles, ...media } = change.media || {};
         if (addedFiles) files.push(...addedFiles);
         overrides.set(change.id, {
-          ...previous, ...media, id: change.id, day: change.day, tags: change.tags, revision: change.nextRevision
+          ...previous, ...media, id: change.id, day: change.day, revision: change.nextRevision
         });
       }
     }
@@ -203,8 +202,8 @@ export async function publishPhotos(token, batch) {
   const changes = [];
   for (const { id, form } of batch) {
     changes.push({
-      id, kind: "create", day: form.get("day"), tags: JSON.parse(form.get("tags")),
-      nextRevision: crypto.randomUUID(), media: await prepareMedia(id, form, token)
+      id, kind: "create", day: form.get("day"),
+      nextRevision: crypto.randomUUID(), media: await prepareMedia(form, token)
     });
   }
   await commitChanges(token, changes, "Fotobox: Fotos hochladen");
@@ -216,18 +215,11 @@ export async function editPhotos(token, edits) {
     if (!form) changes.push({ id, kind: "delete", revision });
     else changes.push({
       id, kind: "edit", revision: form.get("revision"), day: form.get("day"),
-      tags: JSON.parse(form.get("tags")), nextRevision: crypto.randomUUID(),
-      media: form.has("image") ? await prepareMedia(id, form, token) : undefined
+      nextRevision: crypto.randomUUID(),
+      media: form.has("image") ? await prepareMedia(form, token) : undefined
     });
   }
   await commitChanges(token, changes, "Fotobox: Fotos verwalten");
-}
-
-export async function dismissReports(token, id) {
-  const reports = await readReports(token);
-  for (const number of reports.get(id)?.numbers || []) {
-    await github("/issues/" + number, { token, method: "PATCH", body: { state: "closed" } });
-  }
 }
 
 export function adminPreview(photo) {

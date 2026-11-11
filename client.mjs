@@ -1,4 +1,4 @@
-import { repository } from "./config.js?v=github1";
+import { repository } from "./config.js?v=weekdays1";
 
 export const days = ["Freitag", "Samstag", "Sonntag"];
 export const $ = id => document.getElementById(id);
@@ -39,8 +39,4 @@ export function chip(text, pressed, action, className = "chip") {
   button.setAttribute("aria-pressed", String(pressed));
   button.addEventListener("click", () => action(button));
   return button;
-}
-
-export function tagKey(tag) {
-  return tag.normalize("NFC").toLocaleLowerCase("de");
 }

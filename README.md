@@ -1,43 +1,28 @@
 # Turniade 2026 · Fotobox
 
-Die Galerie läuft als statische Website auf GitHub Pages. Fotos ansehen, nach Wochentag und Kategorien filtern und als einzelne Bilddateien herunterladen geht ohne Anmeldung. Bei einer Mehrfachauswahl startet die Galerie die Downloads nacheinander. Danach wird die heruntergeladene Auswahl zurückgesetzt. Unterstützt das Gerät das Teilen von Bilddateien, bietet das Teilen-Symbol einen Weg ins native Teilen-Menü.
+Die statische Galerie auf GitHub Pages sortiert Fotos nach Freitag, Samstag und Sonntag. Besucher können die Fotos ansehen, einzeln herunterladen oder mehrere zum Download auswählen.
 
-Die vier Einträge in `config.js` sind Testfotos. Ihre Wochentage und Kategorien sind Beispieldaten.
+## Fotos über Finder oder GitHub hinzufügen
 
-## Fotoordner
+Lege JPG-, PNG- oder WebP-Dateien in den passenden Ordner:
 
-- `Assets/Fotos/Originale/` enthält die Fotos zum Herunterladen.
-- `Assets/Fotos/Vorschau/` enthält die kleineren Bilder für die Galerie.
-- `Assets/Fotos/Import/` enthält die lokalen Ausgangsdateien. Git ignoriert diesen Ordner.
-- `Assets/Design/` enthält das Logo und die Olympia-Grafiken.
+- `Assets/Fotos/Freitag/`
+- `Assets/Fotos/Samstag/`
+- `Assets/Fotos/Sonntag/`
 
-## Lokal öffnen
+Danach die Dateien committen und auf `main` pushen. GitHub Pages erstellt die Fotoliste beim nächsten Build automatisch. In **Settings → Pages** bleibt **Deploy from a branch → main / (root)** eingestellt. Das Beispielbild vom Sonntag liegt bereits im Sonntagsordner. Der Ordner `Assets/Fotos/Import/` ist für lokale Ausgangsdateien und wird beim Veröffentlichen ausgelassen.
 
-Im Projektordner `python3 -m http.server 8765` ausführen und im Browser [http://localhost:8765](http://localhost:8765) öffnen.
+## Fotos über den Admin-Bereich hinzufügen
 
-## GitHub Pages einrichten
+1. Erstelle auf GitHub einen [Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new). Wähle nur `Turniade26Fotobox` und unter **Repository permissions** die Berechtigung **Contents → Read and write**.
+2. Öffne **Admin** auf der Fotobox und gib das bisherige Passwort und den GitHub-Schlüssel ein. Die Admin-Seite prüft den Passwort-Hash im Browser. GitHub prüft die Schreibberechtigung.
+3. Wähle mehrere Bilder auf einmal, stelle den gemeinsamen Wochentag ein und drücke **Fotos veröffentlichen**. Ein Stapel wird in einem Commit gespeichert. Originale und Vorschauen aus dem Admin-Upload liegen in `Assets/Fotos/Originale/` und `Assets/Fotos/Vorschau/`.
 
-1. Die Projektdateien in das GitHub-Repository hochladen.
-2. Im Repository unter **Settings → Pages → Build and deployment** die Quelle **Deploy from a branch** und **main / (root)** auswählen.
-3. Die Galerie unter der in GitHub angezeigten Adresse öffnen. Für das vorhandene Repository ist die vorgesehene Adresse `https://nordqueens.github.io/Turniade26Fotobox/`.
+Über **Alle Fotos** kannst du Fotos beider Wege bearbeiten, ersetzen oder löschen. Der GitHub-Schlüssel bleibt bis zum Abmelden oder bis zu 30 Minuten im selben Browser-Tab gespeichert. Fotos aus dem öffentlichen Repository können nach dem Löschen im Git-Verlauf abrufbar bleiben.
 
-Wer die Testfotos nur lokal nutzen möchte, ersetzt `samplePhotos` in `upload/sample-photos.mjs` durch ein leeres Array und lässt `Assets/Fotos/Originale` und `Assets/Fotos/Vorschau` beim Veröffentlichen weg. Die Galerie und die Fotodateien sind über ihre URLs öffentlich erreichbar.
+Für eine einfache lokale Vorschau `python3 -m http.server 8765` im Projektordner starten. Die Wochentagsordner werden beim Jekyll-Build von GitHub Pages eingelesen.
 
-## Fotos im Admin-Bereich hochladen
-
-Die Fotobox läuft auf GitHub Pages. Neue Originale und Vorschauen landen unter `Assets/Fotos/`. Der Katalog `Assets/Fotos/katalog.json` enthält Wochentage und Kategorien. Ein Upload-Stapel wird zusammen als ein Commit veröffentlicht. GitHub Pages baut die Seite danach automatisch neu. Ein Upload unterstützt JPG, PNG und WebP bis 20 MB pro Foto.
-
-1. Auf GitHub einen [Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) mit kurzer Laufzeit erstellen. Als Eigentümer `nordqueens` und unter **Only select repositories** nur `Turniade26Fotobox` wählen. Unter **Repository permissions** **Contents** und **Issues** jeweils auf **Read and write** stellen.
-2. Auf der veröffentlichten Fotobox **Admin** öffnen. Das bisherige Admin-Passwort und den GitHub-Schlüssel eingeben. Die Admin-Seite prüft den Passwort-Hash im Browser. GitHub prüft separat die Schreibberechtigung.
-3. Fotos auswählen, Wochentag und Kategorien setzen und **Fotos veröffentlichen** drücken. Über **Alle Fotos** lassen sich Einträge bearbeiten, ersetzen oder löschen.
-
-Der GitHub-Schlüssel bleibt bis zum Abmelden oder bis zu 30 Minuten im selben Browser-Tab gespeichert. Den Schlüssel nach dem Event auf GitHub widerrufen. Passwort-Hash und Fotos sind Bestandteil des öffentlichen Repositorys. Gelöschte oder ersetzte Dateien können im Git-Verlauf abrufbar bleiben.
-
-## Fotos melden
-
-Das Ausrufezeichen öffnet nach Wahl des Grundes eine vorausgefüllte GitHub-Meldung. Zum Absenden ist eine GitHub-Anmeldung erforderlich. Bei jüngeren Kindern kann eine erwachsene Person das übernehmen. GitHub Issues müssen im Repository aktiviert sein. Die Fotobox blendet Bilder aus, sobald sie die offene Meldung beim nächsten Abruf sieht. Unter **Admin → Gemeldet** kann das Team sie prüfen und das Foto wieder anzeigen oder aus dem aktuellen Stand löschen.
-
-[GitHub-Pages-Veröffentlichung](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+[GitHub Pages mit Jekyll](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/about-github-pages-and-jekyll)
 
 ## Schrift und Gestaltung
 

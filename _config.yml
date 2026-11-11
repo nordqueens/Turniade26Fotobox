@@ -1,0 +1,3 @@
+exclude:
+  - Assets/Fotos/Import
+  - README.md
