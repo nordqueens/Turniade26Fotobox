@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f6f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#211e19" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Entdecke die Fotos vom Turniade-Wochenende 2026 und lade deine Lieblingsbilder herunter.">
+  <title>Turniade 2026 · Fotobox</title>
+  <link rel="icon" href="Assets/Design/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700..800&amp;family=DM+Sans:wght@400..800&amp;display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body id="oben">
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><path d="M8.6 8.4a3.5 3.5 0 1 1 5.2 3.1c-1.1.7-1.8 1.3-1.8 2.5m0 4h.01"/></symbol>
+    <filter id="transparent-paper" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.3333 -.3333 -.3333 0 1"/>
+      <feComponentTransfer result="paper-mask"><feFuncA type="linear" slope="12" intercept="-.24"/></feComponentTransfer>
+      <feComposite in="SourceGraphic" in2="paper-mask" operator="in"/>
+    </filter>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3m-4 4 4-4 4 4M8 9H5v12h14V9h-3"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  </svg>
+
+  <header class="site-header">
+    <img class="olympia-stripes header-stripes" src="Assets/Design/olympia-blau-gelb.png" alt="" aria-hidden="true">
+    <div class="wrap header-inner">
+      <h1><a class="brand" href="#oben">
+        <img class="event-logo" src="Assets/Design/logo.png" alt="KiSGruTu · TujuSH" width="92" height="67">
+        <span><small>TURNIADE 2026</small><strong>Fotobox</strong></span>
+      </a></h1>
+      <div class="header-actions">
+        <button class="icon-button help-button" id="open-help" type="button" aria-label="Hilfe zur Fotobox" title="Hilfe zur Fotobox"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg></button>
+        <button class="icon-button upload-button" id="open-upload" type="button" aria-label="Fotos hochladen" title="Fotos hochladen"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="slideshow" id="slideshow" aria-label="Slideshow" hidden>
+      <button class="slide-open" id="slide-open" type="button" aria-label="Foto aus der Slideshow öffnen">
+        <img class="slide-backdrop" id="slide-backdrop" alt="" aria-hidden="true">
+        <img class="slide-image" id="slide-image" alt="">
+      </button>
+    </section>
+
+    <section class="gallery" id="galerie" aria-label="Fotos">
+      <div class="gallery-heading">
+        <p id="photo-count" role="status"></p>
+        <button class="text-button clear-filters" id="clear-filters" type="button">Filter löschen</button>
+      </div>
+      <div class="tag-filter" id="tag-row">
+        <span id="tag-label">Tags</span>
+        <div class="tag-scroll" id="tag-filter" role="group" aria-labelledby="tag-label"></div>
+      </div>
+      <p class="notice" id="catalog-error" role="status" hidden>Die hochgeladenen Fotos sind gerade nicht erreichbar. <button class="text-button" id="retry-catalog" type="button">Erneut laden</button></p>
+      <div class="day-filters" id="day-filters" role="group" aria-label="Nach Wochentag filtern"></div>
+      <div id="photo-groups"></div>
+      <div class="empty-state" id="empty-state" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>
+        <h3>Hier sind keine Fotos</h3>
+        <button class="button" id="reset-filters" type="button">Tagfilter löschen</button>
+      </div>
+      <noscript><p>Aktiviere JavaScript, um die Fotos anzuzeigen und herunterzuladen.</p></noscript>
+    </section>
+  </main>
+
+  <img class="olympia-stripes bottom-stripes" src="Assets/Design/olympia-rot-gruen.png" alt="" aria-hidden="true" loading="lazy">
+
+  <div id="selection-bar" class="selection-bar" hidden>
+    <strong id="selection-count" role="status"></strong>
+    <div class="save-actions">
+      <button class="icon-button share-button" id="share-selection" type="button" aria-label="Ausgewählte Fotos teilen oder sichern" hidden><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg></button>
+      <button class="button" id="download-selection" type="button"><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg><span>Herunterladen</span></button>
+    </div>
+  </div>
+  <p class="toast" id="toast" role="status" hidden></p>
+
+  <dialog class="dialog viewer" id="viewer" aria-label="Fotoansicht">
+    <div class="viewer-stage">
+      <img id="viewer-image" alt="">
+      <p id="viewer-count"></p>
+      <button class="icon-button" id="viewer-close" type="button" aria-label="Fotoansicht schließen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      <button class="icon-button" id="viewer-prev" type="button" aria-label="Vorheriges Foto"><svg class="icon" aria-hidden="true"><use href="#i-prev"/></svg></button>
+      <button class="icon-button" id="viewer-next" type="button" aria-label="Nächstes Foto"><svg class="icon" aria-hidden="true"><use href="#i-next"/></svg></button>
+    </div>
+    <div class="viewer-bottom"><div class="photo-tags" id="viewer-tags" tabindex="0" aria-label="Foto-Tags"></div><div class="save-actions">
+      <button class="icon-button share-button" id="share-viewer" type="button" aria-label="Foto teilen oder sichern" hidden><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg></button>
+      <a class="icon-button" id="viewer-download" aria-label="Foto herunterladen" download><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></a>
+    </div></div>
+  </dialog>
+
+  <dialog class="dialog help-dialog" id="help" aria-labelledby="help-title">
+    <div class="dialog-heading">
+      <h2 id="help-title">So geht’s</h2>
+      <button class="icon-button" id="close-help" type="button" aria-label="Hilfe schließen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <ul class="help-list">
+      <li>Tippe auf ein Foto, um es groß zu sehen. Wische nach links oder rechts, um weiterzublättern.</li>
+      <li>Tippe auf den Download-Pfeil am Foto, um es zu speichern.</li>
+      <li>Für mehrere Fotos tippst du auf die Kästchen und dann auf <strong>Herunterladen</strong>. Wenn dein Browser nachfragt, erlaube mehrere Downloads.</li>
+      <li>Wenn du das Teilen-Symbol siehst, kannst du darüber im Handy-Menü „Bild sichern“ wählen, falls es angeboten wird.</li>
+      <li>Mit den Reitern wechselst du den Tag. „Filter löschen“ setzt alle Tags zurück.</li>
+    </ul>
+  </dialog>
+
+  <dialog class="dialog save-dialog" id="save-dialog" aria-labelledby="save-title">
+    <div class="dialog-heading">
+      <h2 id="save-title">Fotos sichern</h2>
+      <button class="icon-button" id="close-save" type="button" aria-label="Fenster schließen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <p id="save-status" role="status"></p>
+    <button class="button primary" id="open-share-sheet" type="button" hidden><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg>Teilen-Menü öffnen</button>
+  </dialog>
+
+  <dialog class="dialog uploader" id="uploader" aria-labelledby="upload-title">
+    <div class="dialog-heading">
+      <span class="dialog-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
+      <h2 id="upload-title">Fotos hochladen</h2>
+      <button class="icon-button" id="close-upload" type="button" aria-label="Upload schließen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <p class="notice" id="upload-unavailable" hidden>Der Upload ist noch nicht eingerichtet. Die Beispielgalerie kannst du schon nutzen.</p>
+    <form id="unlock-form" hidden>
+      <p>Gib das Upload-Passwort ein.</p>
+      <label for="password">Passwort</label>
+      <input id="password" type="password" autocomplete="current-password" required maxlength="256">
+      <button class="button primary" type="submit">Freischalten</button>
+    </form>
+    <form id="upload-form" hidden>
+      <label for="upload-files">Fotos auswählen</label>
+      <input id="upload-files" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+      <p class="field-help">JPG, PNG oder WebP · bis zu 20 MB pro Foto</p>
+      <ul class="upload-list" id="upload-list" hidden></ul>
+      <label for="upload-day">Tag für diese Fotos</label>
+      <select id="upload-day" required><option value="">Bitte wählen</option><option>Freitag</option><option>Samstag</option><option>Sonntag</option></select>
+      <fieldset><legend>Tags für diese Fotos</legend><div class="filter-options" id="upload-tags"></div></fieldset>
+      <div class="add-tag"><label class="sr-only" for="new-tag">Neuer Tag</label><input id="new-tag" placeholder="Neuer Tag" maxlength="32"><button class="button" id="add-tag" type="button" aria-label="Tag hinzufügen"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Tag</button></div>
+      <button class="button primary" id="publish-photos" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg>Fotos veröffentlichen</button>
+    </form>
+    <p class="notice" id="upload-feedback" role="status" hidden></p>
+  </dialog>
+</body>
+</html>

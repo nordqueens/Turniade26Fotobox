@@ -1,0 +1,10 @@
+name = "turniade-fotobox-upload"
+main = "worker.mjs"
+compatibility_date = "2025-04-01"
+
+[vars]
+SITE_ORIGINS = "https://nordqueens.github.io"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "turniade-2026-fotos"
