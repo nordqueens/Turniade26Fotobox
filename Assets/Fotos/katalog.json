@@ -15,6 +15,15 @@
     {
       "id": "probe-3",
       "deleted": true
+    },
+    {
+      "source": "Assets/Fotos/Originale/93870738-a861-47f5-847c-92e7201c0350.webp",
+      "thumbnail": "Assets/Fotos/Vorschau/93870738-a861-47f5-847c-92e7201c0350.png",
+      "name": "turnen-eekboom-halle--24.webp",
+      "static": false,
+      "id": "c156a479-4b4b-4937-a4b7-b3c37083e7c5",
+      "day": "Freitag",
+      "revision": "254e1327-8238-430b-9154-758c1ea51203"
     }
   ]
 }
