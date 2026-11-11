@@ -23,49 +23,21 @@ Im Projektordner `python3 -m http.server 8765` ausführen und im Browser [http:/
 
 Wer die Testfotos nur lokal nutzen möchte, ersetzt `samplePhotos` in `upload/sample-photos.mjs` durch ein leeres Array und lässt `Assets/Fotos/Originale` und `Assets/Fotos/Vorschau` beim Veröffentlichen weg. Die Galerie und die Fotodateien sind über ihre URLs öffentlich erreichbar.
 
-## Passwortgeschützten Upload verbinden
+## Fotos im Admin-Bereich hochladen
 
-Beim Freischalten vergleicht der Upload-Dienst einen PBKDF2-SHA-256-Hash mit zufälligem Salt. Die Anmeldung ist auf acht Versuche pro Minute und IP pro Cloudflare-Standort begrenzt. Anschließend gelten signierte Upload-Tokens für 30 Minuten. Der Dienst speichert Original, Vorschau, den ausgewählten Wochentag und die Kategorien. Nach erfolgreichem Upload erscheint das Foto in der Galerie. Für neue Fotos ist kein GitHub-Commit nötig. Pro Foto sind JPG, PNG oder WebP bis 20 MB und bis zu acht Kategorien möglich. Beim Hochladen ist der aktuelle Wochentag in der Zeitzone Europe/Berlin vorausgewählt. Außerhalb von Freitag bis Sonntag ist Freitag der Ausgangswert. Wochentag und Kategorien gelten für alle Fotos des Stapels. Neue Kategorien stehen nach Veröffentlichung des ersten Fotos auch in der Galerie und bei späteren Uploads zur Auswahl.
+Die Fotobox läuft auf GitHub Pages. Neue Originale und Vorschauen landen unter `Assets/Fotos/`. Der Katalog `Assets/Fotos/katalog.json` enthält Wochentage und Kategorien. Ein Upload-Stapel wird zusammen als ein Commit veröffentlicht. GitHub Pages baut die Seite danach automatisch neu. Ein Upload unterstützt JPG, PNG und WebP bis 20 MB pro Foto.
 
-1. In Cloudflare R2 aktivieren und im Ordner `upload` diese Befehle ausführen.
+1. Auf GitHub einen [Fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) mit kurzer Laufzeit erstellen. Als Eigentümer `nordqueens` und unter **Only select repositories** nur `Turniade26Fotobox` wählen. Unter **Repository permissions** **Contents** und **Issues** jeweils auf **Read and write** stellen.
+2. Auf der veröffentlichten Fotobox **Admin** öffnen. Das bisherige Admin-Passwort und den GitHub-Schlüssel eingeben. Die Admin-Seite prüft den Passwort-Hash im Browser. GitHub prüft separat die Schreibberechtigung.
+3. Fotos auswählen, Wochentag und Kategorien setzen und **Fotos veröffentlichen** drücken. Über **Alle Fotos** lassen sich Einträge bearbeiten, ersetzen oder löschen.
 
-   ```sh
-   npx wrangler@4 login
-   npx wrangler@4 r2 bucket create turniade-2026-fotos
-   npx wrangler@4 deploy
-   node create-upload-secret.mjs | npx wrangler@4 secret put UPLOAD_AUTH
-   ```
+Der GitHub-Schlüssel bleibt bis zum Abmelden oder bis zu 30 Minuten im selben Browser-Tab gespeichert. Den Schlüssel nach dem Event auf GitHub widerrufen. Passwort-Hash und Fotos sind Bestandteil des öffentlichen Repositorys. Gelöschte oder ersetzte Dateien können im Git-Verlauf abrufbar bleiben.
 
-   Bei der letzten Abfrage das vereinbarte Upload-Passwort eingeben. Die Eingabe bleibt verborgen. Nur Salt, Passwort-Hash und ein zufälliger Signaturschlüssel gehen als Cloudflare-Secret an den Worker. Den R2-Bucket privat lassen. Öffentliche Lesezugriffe laufen über den Worker. R2 hat ein monatliches Freikontingent und benötigt bei der Aktivierung eine Cloudflare-R2-Subscription.
-2. Die vom Worker ausgegebene HTTPS-Adresse in `config.js` bei `apiBase` eintragen und die Änderung auf GitHub veröffentlichen.
-3. Bei einer eigenen Domain den Origin in `upload/wrangler.toml` bei `SITE_ORIGINS` ergänzen und den Worker erneut bereitstellen. Ein Origin besteht aus Protokoll und Domain. Mehrere Origins werden durch Kommas getrennt. Für die lokale Entwicklung lässt sich der erlaubte Origin bei `wrangler dev` separat setzen.
-4. Die veröffentlichte Galerie öffnen und über **Admin** das Passwort prüfen. Beim ersten Foto einen Wochentag wählen, veröffentlichen und die Galerie in einem zweiten Browserfenster öffnen.
+## Fotos melden
 
-[GitHub-Pages-Veröffentlichung](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site) · [Cloudflare R2 mit Workers](https://developers.cloudflare.com/r2/get-started/workers-api/)
+Das Ausrufezeichen öffnet nach Wahl des Grundes eine vorausgefüllte GitHub-Meldung. Zum Absenden ist eine GitHub-Anmeldung erforderlich. Bei jüngeren Kindern kann eine erwachsene Person das übernehmen. GitHub Issues müssen im Repository aktiviert sein. Die Fotobox blendet Bilder aus, sobald sie die offene Meldung beim nächsten Abruf sieht. Unter **Admin → Gemeldet** kann das Team sie prüfen und das Foto wieder anzeigen oder aus dem aktuellen Stand löschen.
 
-### Fotos melden und verwalten
-
-Über das Ausrufezeichen in der Fotoansicht können Besucher ein Foto melden und einen Grund aus der Auswahlliste angeben. Der Fotodienst blendet es dann für alle Besucher aus. Offene Seiten aktualisieren die Galerie beim Wiederöffnen des Tabs oder spätestens mit dem nächsten Abruf nach bis zu 30 Sekunden. Die Dateien im privaten R2-Speicher bleiben zur Prüfung erhalten. Der Dienst begrenzt neue Meldungen pro IP und Cloudflare-Standort.
-
-Die eigene Admin-Seite erreichst du über das Schloss oder direkt über `admin.html`. Die Sitzung bleibt im selben Browser-Tab bis zum Ablauf des 30-Minuten-Tokens oder bis zum Abmelden erhalten. Der Meldungszähler lädt beim Öffnen der Seite und aktualisiert sich bei Meldungen im selben Browser sofort sowie geräteübergreifend ungefähr alle zwölf Sekunden.
-
-Unter **Admin → Gemeldet** lassen sich Meldungen prüfen. Über **Foto wieder anzeigen** wird das Foto erneut öffentlich sichtbar. Unter **Alle Fotos** lassen sich Wochentag und Kategorien ändern, Fotos ersetzen oder löschen. Beim Löschen einer über den Fotodienst hochgeladenen Datei werden Original und Vorschau aus R2 gelöscht. Ausgewählte Fotos lassen sich gemeinsam löschen oder um eine Kategorie ergänzen bzw. davon befreien. Eine geänderte Datei übernimmt den Meldestatus ihres Vorgängers.
-
-Fest im öffentlichen Repository liegende Testbilder können in der Galerie ausgeblendet werden. Ihre statischen URLs bleiben erreichbar, bis die Dateien aus dem veröffentlichten Stand entfernt werden. Für Eventfotos den Upload verwenden, damit der Fotodienst auch den direkten Dateizugriff sperren kann.
-
-### Upload lokal testen
-
-Im Projektordner in einem separaten Terminal eine lokale Kopie des Workers starten. So bleiben die geheimen Daten außerhalb des Ordners, den der lokale Webserver ausliefert.
-
-```sh
-fotobox_worker_dir=$(mktemp -d)
-cp upload/{auth.mjs,create-upload-secret.mjs,photos.mjs,report-reasons.mjs,sample-photos.mjs,worker.mjs,wrangler.toml} "$fotobox_worker_dir/"
-cd "$fotobox_worker_dir"
-node create-upload-secret.mjs --local
-npx wrangler@4 dev --ip 127.0.0.1 --port 8787 --var SITE_ORIGINS:http://127.0.0.1:8765
-```
-
-Die Website unter [http://127.0.0.1:8765/?upload=local](http://127.0.0.1:8765/?upload=local) öffnen. Der Test nutzt lokalen Fotospeicher und benötigt kein Cloudflare-Konto.
+[GitHub-Pages-Veröffentlichung](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
 ## Schrift und Gestaltung
 

@@ -46,11 +46,13 @@
 
   <main class="wrap uploader admin-page">
     <p class="notice" id="upload-feedback" role="status" hidden></p>
-    <p class="notice" id="upload-unavailable" hidden>Der Fotodienst ist noch nicht verbunden. Die Beispielgalerie kannst du schon nutzen.</p>
     <form class="admin-panel" id="unlock-form" hidden>
-      <p>Gib das Admin-Passwort ein.</p>
+      <p>Gib das Admin-Passwort und einen GitHub-Schlüssel für dieses Repository ein.</p>
       <label for="password">Passwort</label>
       <input id="password" type="password" autocomplete="current-password" required maxlength="256">
+      <label for="github-key">GitHub-Schlüssel</label>
+      <input id="github-key" type="password" autocomplete="off" required spellcheck="false">
+      <p class="field-help">Nur für dieses Repository. Berechtigungen: Contents und Issues, jeweils Read and write. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Schlüssel auf GitHub erstellen</a></p>
       <button class="button primary" type="submit">Freischalten</button>
     </form>
     <nav class="admin-nav" id="admin-nav" aria-label="Admin-Bereich" hidden>
@@ -103,7 +105,7 @@
       </div>
       <div class="notice error" id="confirm-delete-photo" hidden>
         <p>Dieses Foto wirklich löschen?</p>
-        <p id="static-delete-note" hidden>Dieses Testfoto verschwindet aus der Galerie. Die Datei im GitHub-Repository musst du dort entfernen.</p>
+        <p>Das Bild wird aus der Galerie und dem aktuellen Stand entfernt. Im öffentlichen Git-Verlauf kann es weiterhin abrufbar sein.</p>
         <div class="admin-actions">
           <button class="button danger-button" id="delete-photo" type="button">Endgültig löschen</button>
           <button class="button" id="cancel-delete-photo" type="button">Abbrechen</button>

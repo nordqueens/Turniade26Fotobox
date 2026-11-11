@@ -1,13 +1,8 @@
-import { apiBase } from "./config.js";
+import { repository } from "./config.js";
 
 export const days = ["Freitag", "Samstag", "Sonntag"];
 export const $ = id => document.getElementById(id);
-const localUpload = ["localhost", "127.0.0.1"].includes(location.hostname)
-  && new URLSearchParams(location.search).get("upload") === "local";
-export const endpoint = localUpload ? "http://127.0.0.1:8787" : apiBase.replace(/\/$/, "");
-
-export const modeQuery = localUpload ? "?upload=local" : "";
-const channelName = "fotobox:" + new URL(".", location.href).pathname + ":" + endpoint;
+const channelName = "fotobox:" + repository;
 export const catalogChannel = typeof BroadcastChannel === "function" ? new BroadcastChannel(channelName) : null;
 
 export function renderDayToggle(container, selected, onChange) {
@@ -49,15 +44,3 @@ export function chip(text, pressed, action, className = "chip") {
 export function tagKey(tag) {
   return tag.normalize("NFC").toLocaleLowerCase("de");
 }
-
-export async function request(path, options = {}, parse = response => response.json()) {
-  const response = await fetch(endpoint + path, options);
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    const failure = new Error(error.message || "Der Fotodienst ist gerade nicht erreichbar.");
-    failure.status = response.status;
-    throw failure;
-  }
-  return parse(response);
-}
-

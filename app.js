@@ -1,9 +1,9 @@
 import { defaultTags, samplePhotos } from "./config.js";
-import { $, catalogChannel, chip, days, element, endpoint, icon, modeQuery, renderDayToggle, request, tagKey } from "./client.mjs";
+import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs";
+import { publicPhotos, reportLink } from "./github.mjs";
 import { reportReasons } from "./upload/report-reasons.mjs";
 
-const samples = new Map(samplePhotos.map(photo => [photo.id, photo]));
-const photos = endpoint ? new Map() : new Map(samples);
+const photos = new Map(samplePhotos.map(photo => [photo.id, photo]));
 const selection = new Set();
 const activeTags = new Set();
 let activeDay = days[0];
@@ -240,17 +240,6 @@ async function openShareSheet() {
   }
 }
 
-function galleryPhoto(photo) {
-  if (photo.static) return { ...samples.get(photo.id), ...photo };
-  const source = endpoint + "/photos/" + encodeURIComponent(photo.id);
-  const revision = encodeURIComponent(photo.revision);
-  return {
-    ...photo, source: source + "?v=" + revision,
-    thumbnail: source + "?preview=1&v=" + revision,
-    download: source + "?download=1&v=" + revision
-  };
-}
-
 function renderCatalog() {
   for (const id of selection) {
     if (!photos.has(id)) selection.delete(id);
@@ -273,17 +262,16 @@ function renderCatalog() {
 }
 
 async function loadCatalog() {
-  if (!endpoint) return;
   const version = ++catalogRequest;
   try {
-    const { photos: entries } = await request("/photos", { cache: "no-store" });
+    const { photos: entries } = await publicPhotos();
     if (version !== catalogRequest) return;
     $("catalog-error").hidden = true;
     const snapshot = JSON.stringify(entries);
     if (snapshot === catalogSnapshot) return;
     catalogSnapshot = snapshot;
     photos.clear();
-    for (const photo of entries) photos.set(photo.id, galleryPhoto(photo));
+    for (const photo of entries) photos.set(photo.id, photo);
     renderCatalog();
   } catch {
     if (version === catalogRequest) $("catalog-error").hidden = false;
@@ -293,38 +281,16 @@ async function loadCatalog() {
 function openReport() {
   reportTarget = viewerPhotos[viewIndex];
   if (!reportTarget) return;
-  $("report-error").hidden = true;
   $("report-form").reset();
   $("report-dialog").showModal();
 }
 
-async function submitReport(event) {
+function submitReport(event) {
   event.preventDefault();
   const reason = new FormData(event.currentTarget).get("reason");
-  const target = reportTarget;
-  const button = $("confirm-report");
-  button.disabled = true;
-  $("close-report").disabled = true;
-  $("report-error").hidden = true;
-  try {
-    await request("/reports/" + encodeURIComponent(target.id), {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason })
-    });
-    catalogChannel?.postMessage("catalog");
-    catalogRequest++;
-    catalogSnapshot = undefined;
-    photos.delete(target.id);
-    $("report-dialog").close();
-    renderCatalog();
-    notify("Danke. Das Foto ist jetzt ausgeblendet.");
-    loadCatalog();
-  } catch (error) {
-    $("report-error").textContent = error.message;
-    $("report-error").hidden = false;
-  } finally {
-    button.disabled = false;
-    $("close-report").disabled = false;
-  }
+  if (!reportTarget || !Object.hasOwn(reportReasons, reason)) return;
+  window.open(reportLink(reportTarget.id, reason), "_blank", "noopener,noreferrer");
+  $("report-dialog").close();
 }
 
 $("open-help").addEventListener("click", () => $("help").showModal());
@@ -369,22 +335,16 @@ function renderPhotosAfterViewer() {
 
 }
 
-$("open-admin").href = "admin.html" + modeQuery;
 $("report-reason").append(...Object.entries(reportReasons).map(([value, label]) => new Option(label, value)));
 
-$("open-report").hidden = !endpoint;
+$("open-report").hidden = false;
 $("open-report").addEventListener("click", openReport);
 $("close-report").addEventListener("click", () => $("report-dialog").close());
 $("report-form").addEventListener("submit", submitReport);
-$("report-dialog").addEventListener("cancel", event => {
-  if ($("confirm-report").disabled) event.preventDefault();
-});
-if (endpoint) {
-  catalogChannel?.addEventListener("message", loadCatalog);
-  window.addEventListener("pageshow", event => { if (event.persisted) loadCatalog(); });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadCatalog(); });
-  setInterval(() => { if (!document.hidden) loadCatalog(); }, 30_000);
-}
+catalogChannel?.addEventListener("message", loadCatalog);
+window.addEventListener("pageshow", event => { if (event.persisted) loadCatalog(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) loadCatalog(); });
+setInterval(() => { if (!document.hidden) loadCatalog(); }, 90_000);
 
 renderDayFilters();
 renderTagFilters();

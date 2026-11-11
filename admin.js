@@ -1,15 +1,15 @@
-import { defaultTags, samplePhotos } from "./config.js";
-import { $, catalogChannel, chip, days, element, endpoint, icon, modeQuery, renderDayToggle, request, tagKey } from "./client.mjs";
+import { defaultTags } from "./config.js";
+import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs";
+import { adminPhotos as fetchAdminPhotos, adminPreview, checkPassword, dismissReports, editPhotos, publishPhotos } from "./github.mjs";
 import { reportReasonLabel } from "./upload/report-reasons.mjs";
 
-const samples = new Map(samplePhotos.map(photo => [photo.id, photo]));
 const maxPhotoSize = 20 * 1024 * 1024;
 const maxTags = 8;
 const uploadTags = new Set();
 const newTags = new Set();
 const editTags = new Set();
 const queuedFiles = [];
-const sessionKey = "fotobox-admin:" + location.pathname + ":" + endpoint;
+const sessionKey = "fotobox-github:" + location.pathname;
 const today = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format();
 let uploadDay = days.includes(today) ? today : days[0];
 let uploadToken = readSession();
@@ -18,21 +18,8 @@ let adminPhotos = [];
 let adminLoaded = false;
 let adminListRequest = 0;
 let editPhoto;
-let editImageURL;
-let editImageRequest;
 let uploading = false;
 const adminSelection = new Set();
-const previewURLs = new Set();
-const previewPhotos = new WeakMap();
-let previewRequests = new AbortController();
-const previewObserver = new IntersectionObserver(entries => {
-  for (const entry of entries) {
-    if (!entry.isIntersecting) continue;
-    previewObserver.unobserve(entry.target);
-    loadAdminPreview(entry.target, previewPhotos.get(entry.target));
-  }
-}, { rootMargin: "120px" });
-
 function uploadFeedback(message, isError = false) {
   const feedback = $("upload-feedback");
   feedback.textContent = message;
@@ -42,8 +29,8 @@ function uploadFeedback(message, isError = false) {
 
 function readSession() {
   try {
-    const token = sessionStorage.getItem(sessionKey);
-    if (Number(token?.split(".")[0]) * 1000 > Date.now()) return token;
+    const session = JSON.parse(sessionStorage.getItem(sessionKey) || "null");
+    if (session?.until > Date.now()) return session.token;
     sessionStorage.removeItem(sessionKey);
   } catch {
     // The upload remains usable when browser storage is unavailable.
@@ -54,7 +41,7 @@ function readSession() {
 function saveSession(token) {
   uploadToken = token;
   try {
-    if (token) sessionStorage.setItem(sessionKey, token);
+    if (token) sessionStorage.setItem(sessionKey, JSON.stringify({ token, until: Date.now() + 30 * 60_000 }));
     else sessionStorage.removeItem(sessionKey);
   } catch {
     // Keep the current session in memory if storage is unavailable.
@@ -78,11 +65,9 @@ async function unlock(event) {
   button.disabled = true;
   uploadFeedback("");
   try {
-    const { token } = await request("/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: candidate })
-    });
+    if (!await checkPassword(candidate)) throw new Error("Das Admin-Passwort stimmt nicht.");
+    const token = $("github-key").value.trim();
+    await fetchAdminPhotos(token);
     if (input.value !== candidate) return;
     saveSession(token);
     form.reset();
@@ -149,7 +134,6 @@ function requireAdminLogin() {
   saveSession("");
   adminListRequest++;
   clearEditor();
-  clearAdminPreviews();
   $("admin-list").replaceChildren();
   $("sign-out").hidden = true;
   $("admin-nav").hidden = true;
@@ -160,16 +144,7 @@ function requireAdminLogin() {
   $("password").focus();
 }
 
-async function adminRequest(path, options = {}, parse) {
-  const headers = { ...options.headers, Authorization: "Bearer " + uploadToken };
-  return request(path, { ...options, headers }, parse);
-}
-
 function clearEditor() {
-  editImageRequest?.abort();
-  editImageRequest = undefined;
-  if (editImageURL) URL.revokeObjectURL(editImageURL);
-  editImageURL = undefined;
   $("edit-image").removeAttribute("src");
   $("edit-image").hidden = true;
   $("edit-photo-form").reset();
@@ -192,33 +167,10 @@ function showAdminView(view) {
   $("admin-library").hidden = view === "upload";
   uploadFeedback("");
   if (view === "upload") {
-    clearAdminPreviews();
-    $("admin-list").replaceChildren();
+      $("admin-list").replaceChildren();
     renderTagPicker("upload-tags", uploadTags);
   } else {
     renderAdminLibrary();
-  }
-}
-
-function clearAdminPreviews() {
-  previewObserver.disconnect();
-  previewRequests.abort();
-  previewRequests = new AbortController();
-  for (const url of previewURLs) URL.revokeObjectURL(url);
-  previewURLs.clear();
-}
-
-async function loadAdminPreview(image, photo) {
-  const signal = previewRequests.signal;
-  try {
-    const blob = await adminRequest("/admin/photos/" + encodeURIComponent(photo.id) + "/image?preview=1",
-      { signal }, response => response.blob());
-    if (signal.aborted) return;
-    const url = URL.createObjectURL(blob);
-    previewURLs.add(url);
-    image.src = url;
-  } catch {
-    if (!signal.aborted) image.alt = "Vorschau nicht verfügbar";
   }
 }
 
@@ -228,7 +180,6 @@ function renderAdminSelection() {
 }
 
 function renderAdminLibrary() {
-  clearAdminPreviews();
   const shown = adminView === "reported" ? adminPhotos.filter(photo => photo.status === "reported") : adminPhotos;
   const ids = new Set(shown.map(photo => photo.id));
   for (const id of adminSelection) if (!ids.has(id)) adminSelection.delete(id);
@@ -246,14 +197,7 @@ function renderAdminLibrary() {
     const image = element("img");
     image.alt = photo.alt || photo.name;
     image.loading = "lazy";
-    if (photo.static) {
-      image.src = samples.get(photo.id).thumbnail;
-    } else if (photo.status === "reported") {
-      previewPhotos.set(image, photo);
-      previewObserver.observe(image);
-    } else {
-      image.src = endpoint + "/photos/" + encodeURIComponent(photo.id) + "?preview=1&v=" + encodeURIComponent(photo.revision);
-    }
+    image.src = adminPreview(photo);
     open.append(image);
     open.addEventListener("click", () => openEditor(photo));
     if (adminView === "reported") {
@@ -290,7 +234,7 @@ async function loadAdminPhotos() {
   if (!uploadToken) return;
   const version = ++adminListRequest;
   try {
-    const { photos: entries } = await adminRequest("/admin/photos", { cache: "no-store" });
+    const { photos: entries } = await fetchAdminPhotos(uploadToken);
     if (version !== adminListRequest) return;
     const changed = !adminLoaded || JSON.stringify(entries) !== JSON.stringify(adminPhotos);
     adminPhotos = entries;
@@ -314,7 +258,7 @@ async function loadAdminPhotos() {
   }
 }
 
-async function openEditor(photo) {
+function openEditor(photo) {
   clearEditor();
   editPhoto = photo;
   for (const tag of photo.tags) editTags.add(tag);
@@ -334,34 +278,13 @@ async function openEditor(photo) {
   const image = $("edit-image");
   image.alt = photo.alt || photo.name;
   image.hidden = false;
-  if (photo.static) {
-    const sample = samples.get(photo.id);
-    if (sample) {
-      image.src = sample.thumbnail;
-    }
-    return;
-  }
-  const controller = new AbortController();
-  editImageRequest = controller;
-  try {
-    const blob = await adminRequest("/admin/photos/" + encodeURIComponent(photo.id) + "/image?preview=1",
-      { signal: controller.signal }, response => response.blob());
-    if (controller.signal.aborted) return;
-    editImageURL = URL.createObjectURL(blob);
-    image.src = editImageURL;
-  } catch (error) {
-    if (controller.signal.aborted) return;
-    if (error.status === 401) requireAdminLogin();
-    uploadFeedback(error.message, true);
-  }
+  image.src = adminPreview(photo);
 }
 
 async function mutatePhoto(action) {
   if (uploading || !editPhoto) return;
   const photo = editPhoto;
-  const path = "/admin/photos/" + encodeURIComponent(photo.id);
   const form = $("edit-photo-form");
-  const headers = { "If-Match": photo.revision };
   uploading = true;
   form.inert = true;
   $("admin-nav").inert = true;
@@ -380,13 +303,13 @@ async function mutatePhoto(action) {
         body.set("image", file);
         body.set("preview", await createPreview(file), "preview");
       }
-      await adminRequest(path, { method: "PUT", body });
+      await editPhotos(uploadToken, [{ id: photo.id, form: body }]);
       success = "Änderungen gespeichert.";
     } else if (action === "dismiss") {
-      await adminRequest(path + "/dismiss", { method: "POST", headers });
+      await dismissReports(uploadToken, photo.id);
       success = "Das Foto ist wieder in der Galerie sichtbar.";
     } else {
-      await adminRequest(path, { method: "DELETE", headers });
+      await editPhotos(uploadToken, [{ id: photo.id, revision: photo.revision }]);
       success = "Foto gelöscht.";
     }
   } catch (error) {
@@ -471,8 +394,6 @@ async function publish(event) {
   const day = uploadDay;
   const tags = [...uploadTags];
   const batch = [...queuedFiles];
-  const failures = [];
-  let sessionExpired = false;
   const form = $("upload-form");
   const button = $("publish-photos");
   uploading = true;
@@ -480,44 +401,31 @@ async function publish(event) {
   button.disabled = true;
   $("admin-nav").inert = true;
   try {
+    const pending = [];
     for (const [index, item] of batch.entries()) {
-      uploadFeedback("Foto " + (index + 1) + " von " + batch.length + " wird hochgeladen …");
-      try {
-        const body = new FormData();
-        body.set("image", item.file);
-        body.set("preview", await createPreview(item.file), "preview");
-        body.set("day", day);
-        body.set("tags", JSON.stringify(tags));
-        await adminRequest("/photos/" + item.id, { method: "PUT", body });
-        queuedFiles.splice(queuedFiles.indexOf(item), 1);
-      } catch (error) {
-        if (error.status === 401) {
-          sessionExpired = true;
-          break;
-        }
-        failures.push(item.file.name + " – " + error.message);
-      }
+      uploadFeedback("Foto " + (index + 1) + " von " + batch.length + " wird vorbereitet …");
+      const body = new FormData();
+      body.set("image", item.file);
+      body.set("preview", await createPreview(item.file), "preview");
+      body.set("day", day);
+      body.set("tags", JSON.stringify(tags));
+      pending.push({ id: item.id, form: body });
     }
-    const published = batch.length - queuedFiles.length;
+    uploadFeedback("Fotos werden in GitHub gespeichert …");
+    await publishPhotos(uploadToken, pending);
+    queuedFiles.length = 0;
     renderQueue();
-    if (published) {
-      catalogChannel?.postMessage("catalog");
-      loadAdminPhotos();
-    }
-    if (sessionExpired) {
-      requireAdminLogin();
-      uploadFeedback(published + " von " + batch.length + " veröffentlicht. Melde dich erneut an, um die übrigen Fotos hochzuladen.", true);
-    } else if (failures.length) {
-      uploadFeedback(published + " von " + batch.length + " veröffentlicht. " + failures.join(" · "), true);
-    } else {
-      uploadFeedback(batch.length === 1 ? "Dein Foto wurde veröffentlicht." : batch.length + " Fotos wurden veröffentlicht.");
-    }
+    catalogChannel?.postMessage("catalog");
+    loadAdminPhotos();
+    uploadFeedback("Fotos gespeichert. GitHub Pages veröffentlicht die Änderungen in Kürze.");
+  } catch (error) {
+    if (error.status === 401) requireAdminLogin();
+    uploadFeedback(error.message, true);
   } finally {
     uploading = false;
     form.inert = false;
     button.disabled = false;
     $("admin-nav").inert = false;
-    if (!sessionExpired) button.focus();
   }
 }
 
@@ -550,7 +458,6 @@ $("edit-photo-form").addEventListener("submit", event => {
 });
 $("dismiss-report").addEventListener("click", () => mutatePhoto("dismiss"));
 $("ask-delete-photo").addEventListener("click", () => {
-  $("static-delete-note").hidden = !editPhoto.static;
   $("confirm-delete-photo").hidden = false;
   $("cancel-delete-photo").focus();
 });
@@ -593,8 +500,7 @@ function openBatch(action) {
   $("batch-form").reset();
   $("batch-title").textContent = deleting ? "Auswahl löschen" : "Kategorien ändern";
   $("batch-summary").textContent = deleting
-    ? batchPhotos.length + " ausgewählte Fotos wirklich löschen?" + (batchPhotos.some(photo => photo.static)
-      ? " Statische Testfotos verschwinden aus der Galerie. Die Dateien bleiben im GitHub-Repository." : "")
+    ? batchPhotos.length + " ausgewählte Fotos wirklich löschen?" + (batchPhotos.length ? " Im Git-Verlauf können die Dateien weiter abrufbar sein." : "")
     : "Die Änderung gilt für die " + batchPhotos.length + " ausgewählten Fotos.";
   $("batch-category-fields").hidden = deleting;
   $("batch-category-fields").disabled = deleting;
@@ -628,52 +534,42 @@ async function applyBatch(event) {
   $("batch-form").inert = true;
   $("close-batch").disabled = true;
   $("batch-error").hidden = true;
-  const failed = [];
-  let completed = 0;
-  let expired = false;
-  for (const photo of selected) {
-    try {
-      const path = "/admin/photos/" + encodeURIComponent(photo.id);
-      if (deleting) {
-        await adminRequest(path, { method: "DELETE", headers: { "If-Match": photo.revision } });
-      } else {
-        const tags = photo.tags.filter(tag => tagKey(tag) !== tagKey(category));
-        if (!remove) tags.push(photo.tags.find(tag => tagKey(tag) === tagKey(category)) || category);
-        if (tags.length > maxTags) throw new Error("höchstens acht Kategorien");
-        if (JSON.stringify(tags) !== JSON.stringify(photo.tags)) {
-          const body = new FormData();
-          body.set("revision", photo.revision);
-          body.set("day", photo.day);
-          body.set("tags", JSON.stringify(tags));
-          await adminRequest(path, { method: "PUT", body });
-        }
-      }
-      adminSelection.delete(photo.id);
-      completed++;
-    } catch (error) {
-      if (error.status === 401) {
-        expired = true;
-        break;
-      }
-      failed.push(photo.name + " · " + error.message);
-    }
-  }
-  uploading = false;
-  $("batch-form").inert = false;
-  $("close-batch").disabled = false;
-  $("batch-dialog").close();
-  if (completed) catalogChannel?.postMessage("catalog");
-  if (expired) requireAdminLogin();
-  else {
+  try {
+    const edits = selected.map(photo => {
+      if (deleting) return { id: photo.id, revision: photo.revision };
+      const tags = photo.tags.filter(tag => tagKey(tag) !== tagKey(category));
+      if (!remove) tags.push(photo.tags.find(tag => tagKey(tag) === tagKey(category)) || category);
+      if (tags.length > maxTags) throw new Error(photo.name + " hat bereits acht Kategorien.");
+      const form = new FormData();
+      form.set("revision", photo.revision);
+      form.set("day", photo.day);
+      form.set("tags", JSON.stringify(tags));
+      return { id: photo.id, form };
+    });
+    await editPhotos(uploadToken, edits);
+    for (const photo of selected) adminSelection.delete(photo.id);
+    $("batch-dialog").close();
+    catalogChannel?.postMessage("catalog");
     renderAdminLibrary();
     loadAdminPhotos();
+    uploadFeedback(selected.length + (deleting ? " Fotos gelöscht." : " Fotos bearbeitet."));
+  } catch (error) {
+    if (error.status === 401) {
+      $("batch-dialog").close();
+      requireAdminLogin();
+      uploadFeedback(error.message, true);
+    } else {
+      $("batch-error").textContent = error.message;
+      $("batch-error").hidden = false;
+      if (error.status === 409) loadAdminPhotos();
+    }
+  } finally {
+    uploading = false;
+    $("batch-form").inert = false;
+    $("close-batch").disabled = false;
   }
-  const message = completed + " von " + selected.length + (deleting ? " Fotos gelöscht." : " Fotos bearbeitet.");
-  uploadFeedback(message + (expired ? " Bitte melde dich erneut an." : failed.length ? " " + failed.join(" · ") : ""), expired || Boolean(failed.length));
 }
 
-$("brand-gallery").href = "./" + modeQuery;
-$("back-gallery").href = "./" + modeQuery;
 $("sign-out").addEventListener("click", () => {
   if (uploading) return;
   adminSelection.clear();
@@ -702,23 +598,19 @@ $("batch-dialog").addEventListener("cancel", event => {
   if (uploading) event.preventDefault();
 });
 
-if (!endpoint) {
-  $("upload-unavailable").hidden = false;
-} else {
-  if (uploadToken) showAdminSession();
-  else $("unlock-form").hidden = false;
-  catalogChannel?.addEventListener("message", loadAdminPhotos);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadAdminPhotos(); });
-  window.addEventListener("pageshow", event => {
-    if (!event.persisted) return;
-    const stored = readSession();
-    if (stored === uploadToken) loadAdminPhotos();
-    else if (stored) {
-      uploadToken = stored;
-      showAdminSession();
-    } else {
-      requireAdminLogin();
-    }
-  });
-  setInterval(() => { if (!document.hidden) loadAdminPhotos(); }, 12_000);
-}
+if (uploadToken) showAdminSession();
+else $("unlock-form").hidden = false;
+catalogChannel?.addEventListener("message", loadAdminPhotos);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) loadAdminPhotos(); });
+window.addEventListener("pageshow", event => {
+  if (!event.persisted) return;
+  const stored = readSession();
+  if (stored === uploadToken) loadAdminPhotos();
+  else if (stored) {
+    uploadToken = stored;
+    showAdminSession();
+  } else {
+    requireAdminLogin();
+  }
+});
+setInterval(() => { if (!document.hidden) loadAdminPhotos(); }, 30_000);
