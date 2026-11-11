@@ -1,4 +1,4 @@
-import { publishingBranch, repository, samplePhotos, passwordCheck } from "./config.js";
+import { publishingBranch, repository, samplePhotos, passwordCheck } from "./config.js?v=github1";
 import { reportReasons } from "./upload/report-reasons.mjs";
 
 const api = "https://api.github.com/repos/" + repository;

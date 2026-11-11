@@ -1,6 +1,6 @@
-import { defaultTags } from "./config.js";
-import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs";
-import { adminPhotos as fetchAdminPhotos, adminPreview, checkPassword, dismissReports, editPhotos, publishPhotos } from "./github.mjs";
+import { defaultTags } from "./config.js?v=github1";
+import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs?v=github1";
+import { adminPhotos as fetchAdminPhotos, adminPreview, checkPassword, dismissReports, editPhotos, publishPhotos } from "./github.mjs?v=github1";
 import { reportReasonLabel } from "./upload/report-reasons.mjs";
 
 const maxPhotoSize = 20 * 1024 * 1024;

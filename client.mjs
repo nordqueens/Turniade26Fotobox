@@ -1,4 +1,4 @@
-import { repository } from "./config.js";
+import { repository } from "./config.js?v=github1";
 
 export const days = ["Freitag", "Samstag", "Sonntag"];
 export const $ = id => document.getElementById(id);

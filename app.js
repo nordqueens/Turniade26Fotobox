@@ -1,6 +1,6 @@
-import { defaultTags, samplePhotos } from "./config.js";
-import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs";
-import { publicPhotos, reportLink } from "./github.mjs";
+import { defaultTags, samplePhotos } from "./config.js?v=github1";
+import { $, catalogChannel, chip, days, element, icon, renderDayToggle, tagKey } from "./client.mjs?v=github1";
+import { publicPhotos, reportLink } from "./github.mjs?v=github1";
 import { reportReasons } from "./upload/report-reasons.mjs";
 
 const photos = new Map(samplePhotos.map(photo => [photo.id, photo]));
