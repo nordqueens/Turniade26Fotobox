@@ -1229,6 +1229,249 @@
       "id": "995b0b1e-4234-427f-8dd8-4463434e72ee",
       "day": "Samstag",
       "revision": "6e7412aa-40be-4131-947d-8fbe5d5f300c"
+    },
+    {
+      "source": "Assets/Fotos/Originale/ad99e917-783f-4237-9c1f-d91ce3765b12.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/ad99e917-783f-4237-9c1f-d91ce3765b12.png",
+      "name": "IMG_0928.jpeg",
+      "static": false,
+      "id": "4677cce4-762d-4012-b942-d74ffedda440",
+      "day": "Samstag",
+      "revision": "fc20d020-30b5-4040-ac7b-3ce393ae2b9e"
+    },
+    {
+      "source": "Assets/Fotos/Originale/ffd252af-fb69-475c-98ca-02226778ca66.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/ffd252af-fb69-475c-98ca-02226778ca66.png",
+      "name": "IMG_0927.jpeg",
+      "static": false,
+      "id": "290c0fa7-0dbf-4b06-9fe9-0a20b5c7b8fc",
+      "day": "Samstag",
+      "revision": "a5d66c0f-822f-4801-81dc-40c76a570ca7"
+    },
+    {
+      "source": "Assets/Fotos/Originale/53407046-c43c-416a-a28b-5912dac9c263.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/53407046-c43c-416a-a28b-5912dac9c263.png",
+      "name": "IMG_0926.jpeg",
+      "static": false,
+      "id": "8401948e-bf70-4eaf-9c6d-6b19e7206e9f",
+      "day": "Samstag",
+      "revision": "6352e404-66f8-4766-a847-37232c89304a"
+    },
+    {
+      "source": "Assets/Fotos/Originale/26a77e50-54d3-4edf-86a8-8d9fa3712b46.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/26a77e50-54d3-4edf-86a8-8d9fa3712b46.png",
+      "name": "IMG_0925.jpeg",
+      "static": false,
+      "id": "ec6b49db-cceb-4cc2-8f3b-3a83b668bde1",
+      "day": "Samstag",
+      "revision": "ad4bbfb1-7a05-47ba-8fcd-ffe7956f7ed9"
+    },
+    {
+      "source": "Assets/Fotos/Originale/99e91ef2-6550-4106-897a-f27fb2ee6a8e.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/99e91ef2-6550-4106-897a-f27fb2ee6a8e.png",
+      "name": "IMG_0924.jpeg",
+      "static": false,
+      "id": "3dd4ab42-30fd-4ed1-9abf-6aa24a36e83f",
+      "day": "Samstag",
+      "revision": "52c4bfe3-1c1f-452b-973b-9a86a0b781b9"
+    },
+    {
+      "source": "Assets/Fotos/Originale/45fcba18-1f2e-4e93-8d04-329d013bd52b.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/45fcba18-1f2e-4e93-8d04-329d013bd52b.png",
+      "name": "IMG_0923.jpeg",
+      "static": false,
+      "id": "6ed3b278-de11-48ff-86ba-89430854e389",
+      "day": "Samstag",
+      "revision": "2e54d319-c169-4e73-9a0d-2de6a96e108e"
+    },
+    {
+      "source": "Assets/Fotos/Originale/9f0bef34-0887-43ce-bba2-f9021348f63b.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/9f0bef34-0887-43ce-bba2-f9021348f63b.png",
+      "name": "IMG_0922.jpeg",
+      "static": false,
+      "id": "76300fb0-ab76-4645-9251-c691017fcc13",
+      "day": "Samstag",
+      "revision": "8c64783f-ba7b-45da-8dfe-cc0ccb6b0f1c"
+    },
+    {
+      "source": "Assets/Fotos/Originale/884f70a0-e4e5-41c2-8583-a779167c6ffd.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/884f70a0-e4e5-41c2-8583-a779167c6ffd.png",
+      "name": "IMG_0921.jpeg",
+      "static": false,
+      "id": "3247c89d-abb5-4044-9008-86fc221f8e14",
+      "day": "Samstag",
+      "revision": "45b017ba-d867-4d84-adc8-8ba64372e454"
+    },
+    {
+      "source": "Assets/Fotos/Originale/59e086ef-c9e3-4cdc-a09f-f2f7319e0b4c.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/59e086ef-c9e3-4cdc-a09f-f2f7319e0b4c.png",
+      "name": "IMG_0920.jpeg",
+      "static": false,
+      "id": "5e232ee9-16ef-4b3c-baa7-86a82073499c",
+      "day": "Samstag",
+      "revision": "d48109ef-866a-4efa-9062-424ba8ef6d54"
+    },
+    {
+      "source": "Assets/Fotos/Originale/7ef9a977-1033-4dca-9964-0203a2676cd4.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/7ef9a977-1033-4dca-9964-0203a2676cd4.png",
+      "name": "IMG_0919.jpeg",
+      "static": false,
+      "id": "74a2ce78-f50b-4873-8d64-4d03b9228af8",
+      "day": "Samstag",
+      "revision": "3aa14c1c-3197-4cdc-bcf0-0cc687f10ab9"
+    },
+    {
+      "source": "Assets/Fotos/Originale/fb4530c1-cc53-4932-8f40-d1869836f41e.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/fb4530c1-cc53-4932-8f40-d1869836f41e.png",
+      "name": "IMG_0918.jpeg",
+      "static": false,
+      "id": "23450807-7de7-4dfc-9951-096663f0773b",
+      "day": "Samstag",
+      "revision": "62d56b2c-4595-4799-81c3-ef9448ee8c13"
+    },
+    {
+      "source": "Assets/Fotos/Originale/968bbef0-f8fd-4117-84c9-e2659f5d6b0e.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/968bbef0-f8fd-4117-84c9-e2659f5d6b0e.png",
+      "name": "IMG_0917.jpeg",
+      "static": false,
+      "id": "1b50de75-fd53-4a83-a79b-43497d26e98d",
+      "day": "Samstag",
+      "revision": "0bc9e31d-863d-46c6-ac04-ee9b4735cdd6"
+    },
+    {
+      "source": "Assets/Fotos/Originale/a54edbe0-f637-4ea7-9d6f-04e1b01af7b1.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/a54edbe0-f637-4ea7-9d6f-04e1b01af7b1.png",
+      "name": "IMG_0916.jpeg",
+      "static": false,
+      "id": "5726df5b-d9ae-4225-b4b7-d3bee9268685",
+      "day": "Samstag",
+      "revision": "27377fae-e5af-4926-9e85-641ac36bbf7b"
+    },
+    {
+      "source": "Assets/Fotos/Originale/f06d9d6b-6e11-4ed3-85f7-eb7a1024f15b.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/f06d9d6b-6e11-4ed3-85f7-eb7a1024f15b.png",
+      "name": "IMG_0915.jpeg",
+      "static": false,
+      "id": "2f0f9949-7131-4940-96a7-bbb8da43dc77",
+      "day": "Samstag",
+      "revision": "4b2b4e35-9851-4471-8003-7fc19e4d3c6a"
+    },
+    {
+      "source": "Assets/Fotos/Originale/f3efa45a-a0d9-470c-a643-4d64052640c8.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/f3efa45a-a0d9-470c-a643-4d64052640c8.png",
+      "name": "IMG_0914.jpeg",
+      "static": false,
+      "id": "da8f1532-7b7e-4d69-9f52-4c13bb229cfe",
+      "day": "Samstag",
+      "revision": "1b805601-6ea7-447d-a63d-748391c31b6b"
+    },
+    {
+      "source": "Assets/Fotos/Originale/a2c01c6b-84a2-4e57-a48b-d81f805c203c.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/a2c01c6b-84a2-4e57-a48b-d81f805c203c.png",
+      "name": "IMG_0913.jpeg",
+      "static": false,
+      "id": "b9ecce19-1107-4970-a735-ade5c62ab3ba",
+      "day": "Samstag",
+      "revision": "f57a7465-8ed8-4bb8-9f39-a4e9291b03b5"
+    },
+    {
+      "source": "Assets/Fotos/Originale/1051b5e6-ba58-4c90-ac3d-dcde21465312.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/1051b5e6-ba58-4c90-ac3d-dcde21465312.png",
+      "name": "IMG_0912.jpeg",
+      "static": false,
+      "id": "0607b968-a569-43f2-8070-84df8988910d",
+      "day": "Samstag",
+      "revision": "cb1c88a8-f21b-4e50-bfd6-8ab3c8e58a40"
+    },
+    {
+      "source": "Assets/Fotos/Originale/e0880924-fe0b-4eb0-9c36-3d3d1e348646.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/e0880924-fe0b-4eb0-9c36-3d3d1e348646.png",
+      "name": "IMG_0911.jpeg",
+      "static": false,
+      "id": "63d46615-1a31-4208-b5cb-1b6552cc888d",
+      "day": "Samstag",
+      "revision": "1771028e-b819-43a2-bc47-421d322b0ba3"
+    },
+    {
+      "source": "Assets/Fotos/Originale/3d946443-a7ee-45e8-92c6-e5af087c1e57.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/3d946443-a7ee-45e8-92c6-e5af087c1e57.png",
+      "name": "IMG_0910.jpeg",
+      "static": false,
+      "id": "8749589f-91d5-448a-8706-1ef685e60609",
+      "day": "Samstag",
+      "revision": "392cb3d6-603b-4168-9981-db37dbb1ed65"
+    },
+    {
+      "source": "Assets/Fotos/Originale/4617762e-efdb-415b-9dcd-1067cba5669d.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/4617762e-efdb-415b-9dcd-1067cba5669d.png",
+      "name": "IMG_0909.jpeg",
+      "static": false,
+      "id": "df758ab0-d8d1-48e7-a961-a61d2721a06a",
+      "day": "Samstag",
+      "revision": "fea4c5ec-e42b-439f-9ad0-52ab9ba15f5b"
+    },
+    {
+      "source": "Assets/Fotos/Originale/b1cfd9d1-d1d7-44a0-a97d-9e5839844701.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/b1cfd9d1-d1d7-44a0-a97d-9e5839844701.png",
+      "name": "IMG_0908.jpeg",
+      "static": false,
+      "id": "ee6ffa2d-fae1-48fb-82fb-cec68171107f",
+      "day": "Samstag",
+      "revision": "4e2dad20-9668-490b-a000-512a12671fb3"
+    },
+    {
+      "source": "Assets/Fotos/Originale/e04e5c9b-8fbe-4e0a-8f52-036ded8d259d.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/e04e5c9b-8fbe-4e0a-8f52-036ded8d259d.png",
+      "name": "IMG_0907.jpeg",
+      "static": false,
+      "id": "5b2cb239-83a6-4602-878e-92f93dca545f",
+      "day": "Samstag",
+      "revision": "71346d48-6081-4f72-96bf-e56c9bfc393f"
+    },
+    {
+      "source": "Assets/Fotos/Originale/2d68797e-30ab-4e0e-82cc-364275cfae8d.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/2d68797e-30ab-4e0e-82cc-364275cfae8d.png",
+      "name": "IMG_0906.jpeg",
+      "static": false,
+      "id": "71ce3d73-69ef-4e1a-8a53-40796b58cfc2",
+      "day": "Samstag",
+      "revision": "e54bdfca-f1ee-41f0-9b16-9a5bda21ae9a"
+    },
+    {
+      "source": "Assets/Fotos/Originale/d0023d36-9d61-4dd8-8ca4-f58266003c3a.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/d0023d36-9d61-4dd8-8ca4-f58266003c3a.png",
+      "name": "IMG_0905.jpeg",
+      "static": false,
+      "id": "944ff8e3-9481-4d05-879f-bffe4d42d20c",
+      "day": "Samstag",
+      "revision": "ed1a459c-7dfa-4d1e-8165-34599e1d6bb0"
+    },
+    {
+      "source": "Assets/Fotos/Originale/edaaffd1-dbaf-476b-a55a-95743e3d080f.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/edaaffd1-dbaf-476b-a55a-95743e3d080f.png",
+      "name": "IMG_0904.jpeg",
+      "static": false,
+      "id": "ae11edce-bf0b-4af5-9a75-dc2356da1c86",
+      "day": "Samstag",
+      "revision": "120a53cc-db7f-4c0e-b5d5-6875106b342c"
+    },
+    {
+      "source": "Assets/Fotos/Originale/c11fda80-eaf4-4cab-82f0-e19864b76402.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/c11fda80-eaf4-4cab-82f0-e19864b76402.png",
+      "name": "IMG_0903.jpeg",
+      "static": false,
+      "id": "80febb36-92d2-40fc-8421-4173b7c89977",
+      "day": "Samstag",
+      "revision": "c36c94a9-bd2d-41f6-9737-e3e48d9ef5fb"
+    },
+    {
+      "source": "Assets/Fotos/Originale/0d9b6cee-6281-4adc-91af-8ff014c29de3.jpeg",
+      "thumbnail": "Assets/Fotos/Vorschau/0d9b6cee-6281-4adc-91af-8ff014c29de3.png",
+      "name": "IMG_0902.jpeg",
+      "static": false,
+      "id": "49ac8d46-62dc-4bd2-b8fb-c17b2977a66c",
+      "day": "Samstag",
+      "revision": "5d4b19d3-d36c-4d12-954b-ce23299ca720"
     }
   ]
 }
